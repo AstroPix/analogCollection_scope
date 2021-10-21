@@ -29,15 +29,14 @@ def get_data(run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000
     _, last_trace = scope.read_triggered_event()
     last_trace = np.array([int(s) for s in last_trace.split(',')])
     
-    curve_length = len(last_trace)
-    #arr = np.zeros((no_of_traces, curve_length))
-    arr = [] 
-    
     # Scaling dictionary is used to scale the scope traces to account for scope settings
     scaling_dict = scope.read_scaling_config()
     
+    arr = []
     peaks = []
     integrals = []
+    peakTime =[]
+    baseline = []
     
     n_bad_comm = 0
     i = 0
@@ -69,12 +68,13 @@ def get_data(run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000
                 if (no_of_traces < 0) or (i < no_of_traces):
                     arr.append(trace_scaled)
                     time_axis = time_scaled
-                #if i % 1000 == 0:
-                #    print("At {0:d} / {1:d}".format(i, no_of_traces))
                 
                 noise_sample = np.mean(trace_scaled[noise_range[0]:noise_range[1]])
+                baseline.append( noise_sample )
                 trace_scaled -= noise_sample
                 peaks.append( np.max(trace_scaled)  )
+                peakIndex = np.argmax(trace_scaled, axis=0) #approximate location of signal pulse from highest measurement
+                peakTime = time_scaled[peakIndex]
                 integrals.append( np.sum(trace_scaled[signal_range[0]:signal_range[1]] ) )    
                 
         
@@ -86,16 +86,6 @@ def get_data(run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000
         
         i += 1       
     
-        #if i > 0 and i %1000 == 0 and single:
-        #    t_now = time.time()
-        #    single = False 
-        #    elapsed = time.time() - t_start
-        #    rate = float(i)/float(t_now - t_start)
-        #    print("{2:s} ; At {0:d}/{1:d}".format(i, no_of_traces, time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.localtime())))
-        #    print("\tRate: {0:6.3f} Hz\t Elapsed: {1:6.2f} s\t Estimated total run length: {2:6.2f} s\t Estimated time remaining: {3:6.2f}".format(rate, elapsed, no_of_traces/(rate), no_of_traces/(rate) - elapsed))
-
-        #if i%1000 == 1:
-        #    single = True
     
     t_stop = time.time()
     
@@ -104,11 +94,12 @@ def get_data(run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000
     print(f"Recorded {i} traces in {run_min:0.3f} minutes. Average rate: {i/run_len:.2f} Hz")
 
     
-    dset = f.create_dataset(data_set_name, data=np.array(arr))    
-    dset = f.create_dataset(data_set_name+"_t", data=np.array(time_axis))   
-
-    dset = f.create_dataset(data_set_name+"_peaks", data=np.array(peaks))   
-    dset = f.create_dataset(data_set_name+"_integral", data=np.array(integrals))   
+    f.create_dataset(data_set_name, data=np.array(arr))    
+    f.create_dataset(data_set_name+"_t", data=np.array(time_axis))   
+    f.create_dataset(data_set_name+"_peaks", data=np.array(peaks))   
+    f.create_dataset(data_set_name+"_integral", data=np.array(integrals))   
+    f.create_dataset(data_set_name+"_baseline", data=np.array(baseline)) 
+    f.create_dataset(data_set_name+"_peakTime", data=np.array(peakTime))     
 
     return
 
