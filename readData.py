@@ -22,8 +22,11 @@
     one at a time.
     
     """
+import numpy as np
+import time
+import h5py
 
-def get_data(run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000), signal_range = (2000,10000)):
+def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000), signal_range = (2000,10000)):
 
     # Determines number of points from each scope trace and creates an empty array
     _, last_trace = scope.read_triggered_event()
@@ -94,12 +97,12 @@ def get_data(run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000
     print(f"Recorded {i} traces in {run_min:0.3f} minutes. Average rate: {i/run_len:.2f} Hz")
 
     
-    f.create_dataset(data_set_name, data=np.array(arr))    
-    f.create_dataset(data_set_name+"_t", data=np.array(time_axis))   
-    f.create_dataset(data_set_name+"_peaks", data=np.array(peaks))   
-    f.create_dataset(data_set_name+"_integral", data=np.array(integrals))   
-    f.create_dataset(data_set_name+"_baseline", data=np.array(baseline)) 
-    f.create_dataset(data_set_name+"_peakTime", data=np.array(peakTime))     
+    file.create_dataset(data_set_name, data=np.array(arr))    
+    file.create_dataset(data_set_name+"_t", data=np.array(time_axis))   
+    file.create_dataset(data_set_name+"_peaks", data=np.array(peaks))   
+    file.create_dataset(data_set_name+"_integral", data=np.array(integrals))   
+    file.create_dataset(data_set_name+"_baseline", data=np.array(baseline)) 
+    file.create_dataset(data_set_name+"_peakTime", data=np.array(peakTime))     
 
     return
 
