@@ -3,17 +3,18 @@ from scipy.optimize import curve_fit
 import pylab 
 import numpy as np
 import matplotlib.pyplot as plt
+import h5py
 
 
 # Define the fit function (a Gaussian)
 def Gauss(x, A, mu, sigma):
     return A*np.exp(-(x-mu)**2/(2.0*sigma**2))
 
-
-
-def GaussFit(data, savePlots, bins=100, lowFit=0, highFit=np.inf):
+def GaussFit(data, scale, savePlots, lowFit=0, highFit=np.inf):
     _, xbins0 = np.histogram(data)
     xmax=xbins0.max()
+    #bins set by scope resolution
+    bins=int(xmax/scale)
     histRange=np.linspace(0,xmax,bins)
     ydata,xbins1=np.histogram(data,bins=histRange)
     xbins=xbins1[:-1]
