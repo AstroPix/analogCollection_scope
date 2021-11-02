@@ -196,8 +196,10 @@ def enResPlot_linearScale(settings, coef, integral=0, fitLow=0, fitHigh=np.inf, 
 	f = h5py.File(file,'r')
 	dsName=dataset
 	data=f[dsName+datain]
-	data=[(coef[0]*x+coef[1]) for x in data]
-	
+	#linear fit
+	#data=[((x-coef[1])/coef[0]) for x in data]
+	#quadratic fit
+	data=[(coef[0]*x*x+coef[1]*x+coef[2]) for x in data]
 	
 	#Create arrays for binning based on scope resolution
 	xBinWidth=1.0 #1.0keV bins
@@ -340,3 +342,39 @@ def enResPlot_edge(settings, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1
 	f.close()
 
 	return popt, enRes, pcov
+	
+#Calculate error on fit parameters, save in text file	
+def printParams_edge(file, popt, en_res, pcov, savePlots,integral=False):
+	#Distinguish between peaks and integral
+	if (integral):
+		datain='_integral'
+	else: #peaks
+		datain='_peaks'
+	(Amp1, Amp2, Mu, Sigma) = popt
+	(Amp1_err, Amp2_err, Mu_err, Sigma_err) = np.sqrt(np.diag(pcov))
+	# Error propagation
+	partial_sigma = (2.355*100)/Mu
+	partial_mu = (2.355*100*Sigma)/(Mu**2)
+	stdev_er = np.sqrt(((partial_sigma**2)*(Sigma_err**2))+((partial_mu**2)*(Mu_err)**2))
+	
+	if savePlots:
+		saveto=file[:-5]
+		saveto=f"{saveto}_run1{datain}EnRes.txt"
+		k=open(saveto, "a")
+		k.write("Amplitude erfc= %d Amplitude const = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp1, Amp2, Mu, Sigma)+"\n")
+		k.write("Energy resolution = %0.2f" %(abs(en_res))+"%\n")
+		#amanda here
+		k.write("Error in erfc amplitude = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp_err, Mu_err, Sigma_err)+"\n")
+		k.write("Error in energy resolution = %0.5f"%(stdev_er)+"%\n")
+		k.close()
+		#Display contents to terminal
+		print(f"FIT FROM {datain}")
+		m = open(saveto, "r")
+		text = m.read()
+		print(text)
+		m.close()
+	else:
+		print("Amplitude = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp, Mu, Sigma)+"\n")
+		print("Energy resolution = %0.2f" %(abs(en_res))+"%\n")
+		print("Error in amplitude = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp_err, Mu_err, Sigma_err)+"\n")
+		print("Error in energy resolution = %0.5f"%(stdev_er)+"%\n")
