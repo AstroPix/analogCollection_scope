@@ -27,8 +27,8 @@ def energyCalibFit(trueEn, data, dataName,saveto):
 	coef = np.polyfit(amp1_p,trueEn,1)
 	poly1d_fn = np.poly1d(coef) 
 	plt.scatter(amp1_p,trueEn,label='Amp1',marker="o")
-	plt.plot(amp1_p, poly1d_fn(amp1_p), '--k',label=f"y={coef[0]:.3f}x{coef[1]:.3f}")
-	print(f"Peak linear fit: y={coef[0]:.3f}x{coef[1]:.3f}")
+	plt.plot(amp1_p, poly1d_fn(amp1_p), '--k',label=f"y={coef[0]:.3f}x+{coef[1]:.3f}")
+	print(f"Peak linear fit: y={coef[0]:.3f}x+{coef[1]:.3f}")
 	plt.xlabel(f"{dataName} (from peak height)")
 	plt.ylabel("True Energy [keV]")
 	plt.legend(loc="best")
@@ -64,7 +64,7 @@ muArr=[]
 homeDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp/"
 
 fileList=["102021_amp1/cadmium109_45min.h5py", "102821_amp1/cadmium109_16h.h5py", "102021_amp1/cobalt57_14h.h5py"]
-energyList=[22.16, 88.03, 122.06]
+energyList=[22.16, 88.03, 122.06, 39.46]
 nameList=["Cadmium109", "Cadmium109", "Cobalt57"]
 
 fitLow_p=[0.05,0.25,0.29]
@@ -87,20 +87,33 @@ for file in fileList:
 	muArr.append(mu_tmp)
 	enRes_tmp,mu_tmp=[],[]
 	i+=1
-		
-coef_p,coef_i=energyCalibFit(energyList, muArr, "Fit Mean [V]",homeDir)	
+	
+#Compton edge of Cobalt
+file="102021_amp1/cobalt57_14h.h5py"
+pixel=1
+settings=[homeDir+file, "Cobalt57", pixel, savePlots]
+popt, enRes, pcov = enResFitting.enResPlot_edge(settings,fitLow=0.13, fitHigh=0.17)
+popt, enRes, pcov = enResFitting.enResPlot_edge(settings,fitLow=500, fitHigh=1000,integral=10000)
 
 """
 
 
+
+
+
+
+
 #trigScan fit: y=0.001x-0.6 (y=measured, x=trigThreshold)
 #for Am, trig = 550 mV -> -0.05 measured
-
-
 #zero point from baseline pulled from scope
-muArr=[[-0.05,-0.05],[0.0705,189.6605],[0.2597,742.7046],[0.3049,1812.8481]]
+#muArr=[[-0.05,-0.05],[0.0705,189.6605],[0.2597,742.7046],[0.3049,1812.8481]]
+#energyList.insert(0,0)#zero energy point
 
-energyList.insert(0,0)#zero energy point
+
+muArr=[[0.0705,189.6605],[0.2597,742.7046],[0.3049,1812.8481],[0.151,641.77]]
+
+coef_p,coef_i=energyCalibFit(energyList, muArr, "Fit Mean [V]",homeDir)	
+
 file="102921_amp1/americium241_90min.h5py"
 settings=[homeDir+file, "Americium241", 1, savePlots]
 popt, enRes, pcov = enResFitting.enResPlot_linearScale(settings,coef_p,fitLow=50)
@@ -109,7 +122,7 @@ enResFitting.printParams(file, popt, enRes, pcov, savePlots)
 
 file="102021_amp1/cadmium109_45min.h5py"
 settings=[homeDir+file, "Cadmium109", 1, savePlots]
-popt, enRes, pcov = enResFitting.enResPlot_linearScale(settings,coef_p)
+popt, pcov = enResFitting.enResPlot_linearScale(settings,coef_p)
 enResFitting.printParams(file, popt, enRes, pcov, savePlots)
 
 		
