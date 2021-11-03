@@ -178,7 +178,7 @@ def printParams(file, popt, en_res, pcov, savePlots,integral=False):
 
 
 #Use linear fit coefficients to scale data to keV before plot/fit
-def enResPlot_linearScale(settings, coef, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1'):
+def enResPlot_scale(settings, coef, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1'):
 	#Define inputs
 	file=settings[0]
 	title=settings[1]
@@ -199,18 +199,18 @@ def enResPlot_linearScale(settings, coef, integral=0, fitLow=0, fitHigh=np.inf, 
 	#linear fit
 	#data=[((x-coef[1])/coef[0]) for x in data]
 	#quadratic fit
-	#data=[(coef[0]*x*x+coef[1]*x+coef[2]) for x in data]
+	data=[(coef[0]*x*x+coef[1]*x+coef[2]) for x in data]
 	#sqrt fit
-	data=[(coef[0]*np.sqrt(x)+coef[1]) for x in data]
+	#data=[(coef[0]*np.sqrt(x)+coef[1]) for x in data]
 	
 	#Create arrays for binning based on scope resolution
 	xBinWidth=1.0 #1.0keV bins
 	xMax=np.max(data)
 	#give negative space to see full distribution
 	if integral>0:
-		xMin=np.min(data)-10
+		xMin=np.min(data)
 	else:
-		xMin=-10
+		xMin=0
 	binEdges=np.arange(xMin,xMax+xBinWidth,xBinWidth)#use peakMax+xBinWidth to overshoot range and include all data
 	
 	#Create histogram of data
@@ -365,8 +365,7 @@ def printParams_edge(file, popt, en_res, pcov, savePlots,integral=False):
 		k=open(saveto, "a")
 		k.write("Amplitude erfc= %d Amplitude const = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp1, Amp2, Mu, Sigma)+"\n")
 		k.write("Energy resolution = %0.2f" %(abs(en_res))+"%\n")
-		#amanda here
-		k.write("Error in erfc amplitude = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp_err, Mu_err, Sigma_err)+"\n")
+		k.write("Error in erfc amplitude = %0.3f \nError in erfc constant = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp1_err, Amp2_err, Mu_err, Sigma_err)+"\n")
 		k.write("Error in energy resolution = %0.5f"%(stdev_er)+"%\n")
 		k.close()
 		#Display contents to terminal
@@ -376,7 +375,7 @@ def printParams_edge(file, popt, en_res, pcov, savePlots,integral=False):
 		print(text)
 		m.close()
 	else:
-		print("Amplitude = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp, Mu, Sigma)+"\n")
+		print("Amplitude erfc= %d Amplitude const = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp1, Amp2, Mu, Sigma)+"\n")
 		print("Energy resolution = %0.2f" %(abs(en_res))+"%\n")
-		print("Error in amplitude = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp_err, Mu_err, Sigma_err)+"\n")
+		print("Error in erfc amplitude = %0.3f \nError in erfc constant = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp1_err, Amp2_err, Mu_err, Sigma_err)+"\n")
 		print("Error in energy resolution = %0.5f"%(stdev_er)+"%\n")
