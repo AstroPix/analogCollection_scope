@@ -199,7 +199,9 @@ def enResPlot_linearScale(settings, coef, integral=0, fitLow=0, fitHigh=np.inf, 
 	#linear fit
 	#data=[((x-coef[1])/coef[0]) for x in data]
 	#quadratic fit
-	data=[(coef[0]*x*x+coef[1]*x+coef[2]) for x in data]
+	#data=[(coef[0]*x*x+coef[1]*x+coef[2]) for x in data]
+	#sqrt fit
+	data=[(coef[0]*np.sqrt(x)+coef[1]) for x in data]
 	
 	#Create arrays for binning based on scope resolution
 	xBinWidth=1.0 #1.0keV bins

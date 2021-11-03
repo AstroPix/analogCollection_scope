@@ -10,34 +10,43 @@ import enResFitting
 
 savePlots=False
 
-
+def sqrtFit(x,A,B,mu):
+	#return A*np.sqrt(x-mu)+B
+	return A*np.sqrt(x)+B
 
 def energyCalibFit(trueEn, data, err, dataName, saveto):
 	plt.clf()
 	
+	#get name for plotting
 	dataNameStr=dataName.replace(" ", "")
 	
+	#fill arrays with data passed in
 	amp1_p=[]
 	amp1_i=[]
-	
 	for photopeak in data:
 		flatData=np.array(photopeak).flatten('F')
 		amp1_p.append(flatData[0])
 		amp1_i.append(flatData[1])
 		
-	#give polyfit weights - 1/sigma
+		
+	#AMANDA-give polyfit weights - 1/sigma
+	#Fit different functions to data
+	coef = np.polyfit(trueEn,amp1_p,1) #linear polynomial
+	coef2 = np.polyfit(trueEn,amp1_p,2) #quadratic polynomial
+	popt, pcov = curve_fit(sqrtFit, trueEn, amp1_p) #square root
 	
-	#fit sqrt fn with curve_fit (only float normalization)
+	#Plot data and fit functions
 	x = np.linspace(np.min(trueEn), np.max(trueEn), 100)
-	coef = np.polyfit(trueEn,amp1_p,1)
-	poly1d_fn = np.poly1d(coef) 
-	coef2 = np.polyfit(trueEn,amp1_p,2)
-	poly2d_fn = np.poly1d(coef2) 
 	plt.plot(trueEn, amp1_p, 'o')
+	poly1d_fn = np.poly1d(coef) 
 	linPlot = poly1d_fn(x)
 	plt.plot(x, linPlot, '--k',label=f"y={coef[0]:.3f}x+{coef[1]:.3f}")
+	poly2d_fn = np.poly1d(coef2) 
 	quadPlot = poly2d_fn(x)
 	plt.plot(x, quadPlot, '--r',label=f"y={coef2[0]:.3f}x$^2$+{coef2[1]:.3f}x+{coef2[2]:.3f}")
+	sqrt_fn = sqrtFit(x, *popt)
+	#plt.plot(x,sqrt_fn,'--g',label=f"y={popt[0]:.3f}*sqrt(x-{popt[1]:.3f})+{popt[2]:.3f}")
+	plt.plot(x,sqrt_fn,'--g',label=f"y={popt[0]:.3f}*sqrt(x)+{popt[1]:.3f}")
 	plt.xlabel("True Energy [keV]")
 	plt.ylabel(f"{dataName} (from peak height)")
 	plt.legend(loc="best")
@@ -45,14 +54,18 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	plt.savefig(f"{saveto}_peaks_{dataNameStr}.pdf") if savePlots else plt.show()
 	plt.clf()
 	
-	
+	#Print fit equations to terminal
 	print(f"Peak linear fit: y={coef[0]:.3f}x+{coef[1]:.3f}")
 	print(f"Peak quadratic fit: y={coef2[0]:.3f}x$^2$+{coef2[1]:.3f}x+{coef2[2]:.3f}")
+	#print(f"y={popt[0]:.3f}*sqrt(x-{popt[2]:.3f})+{popt[1]:.3f}")
 
-	#fit opposite orientation so that scaling is easier
+	#fit opposite orientation os polynomials so that scaling is easier
 	coef_fit = np.polyfit(amp1_p,trueEn,2)
+	popt_fit,pcov_fit = curve_fit(sqrtFit, amp1_p,trueEn)
 	
-	return coef_fit
+	#return ideal fit only - sqrt
+	
+	return popt_fit
 	
 ###########################################################################
 #injection=[i*0.1 for i in range(1,19)]injection=[i*0.1 for i in range(1,3)]
