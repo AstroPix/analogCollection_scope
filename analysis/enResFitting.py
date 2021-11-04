@@ -193,9 +193,11 @@ def enResPlot_scale(settings, coef, integral=0, fitLow=0, fitHigh=np.inf, datase
 	dsName=dataset
 	data=f[dsName+datain]
 	#linear fit
-	#data=[(coef[0]*x+coef[1]]) for x in data]
+	#data=[(coef[0]*x+coef[1]) for x in data]
 	#quadratic fit
-	data=[(coef[0]*x*x+coef[1]*x+coef[2]) for x in data]
+	#data=[(coef[0]*x*x+coef[1]*x+coef[2]) for x in data]
+	#3rd deg poly fit
+	data=[(coef[0]*x*x*x+coef[1]*x*x+coef[2]*x+coef[3]) for x in data]
 	#sqrt fit
 	#data=[(coef[0]*np.sqrt(x)+coef[1]) for x in data]
 	

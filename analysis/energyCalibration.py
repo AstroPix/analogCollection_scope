@@ -9,24 +9,30 @@ import sys,os
 import enResFitting
 
 
-savePlots=False
+savePlots=True
 
+#Fit functions for curve_fit
+def linFit(x,m,b):
+	return m*x + b
+def quadFit(x,a,b,c):
+	return a*x*x + b*x + c
+def triFit(x,a,b,c,d):
+	return a*x*x*x + b*x*x + c*x + d	
 def sqrtFit(x,A,B,mu):
 	#return A*np.sqrt(x-mu)+B
 	return A*np.sqrt(x)+B
 	
-def linFit(x,m,b):
-	return m*x + b
 	
-def quadFit(x,a,b,c):
-	return a*x*x + b*x + c
-	
+#fit functions for ODR	
 def lin_odr(p,x):
 	m,b=p
 	return m*x + b
 def quad_odr(p, x):
 	a, b, c = p
 	return a * x *x + b*x + c
+def tri_odr(p,x):
+	a,b,c,d = p
+	return a*x*x*x + b*x*x + c*x + d	
 def sqrt_odr(p,x):
 	A,B=p
 	return A*np.sqrt(x)+B
@@ -55,6 +61,7 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	#Fit different functions to data
 	coef, coef_pcov = curve_fit(linFit,trueEn,amp1_p,sigma=err_p,absolute_sigma=True) #linear 
 	coef2, coef2_pcov = curve_fit(quadFit,trueEn,amp1_p,sigma=err_p,absolute_sigma=True) #quadratic
+	coef3, coef3_pcov = curve_fit(triFit,trueEn,amp1_p,sigma=err_p,absolute_sigma=True) #3rd deg poly
 	popt, pcov = curve_fit(sqrtFit, trueEn, amp1_p, sigma=err_p,absolute_sigma=True) #square root
 	
 	
@@ -64,11 +71,14 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	linPlot=linFit(x,*coef)
 	plt.plot(x, linPlot, '--k',label=f"y={coef[0]:.3f}x+{coef[1]:.3f}")
 	quadPlot=quadFit(x,*coef2)
-	plt.plot(x, quadPlot, '--r',label=f"y={coef2[0]:.4f}x$^2$+{coef2[1]:.3f}x+{coef2[2]:.3f}")
+	plt.plot(x, quadPlot, '--r',label=f"y={coef2[0]:.5f}x$^2$+{coef2[1]:.3f}x+{coef2[2]:.3f}")
+	triPlot=triFit(x,*coef3)
+	plt.plot(x, triPlot, '--b',label=f"y={coef3[0]:.3f}x$^3$+{coef3[1]:.3f}x$^2$+{coef3[2]:.3f}x + {coef3[3]:.3f}")
 	sqrt_fn = sqrtFit(x, *popt)
 	plt.plot(x,sqrt_fn,'--g',label=f"y={popt[0]:.3f}*sqrt(x)$+{popt[1]:.3f}")
 	plt.xlabel("True Energy [keV]")
-	plt.ylabel(f"{dataName} (from peak height)")
+	plt.ylabel(f"{dataName} (from peak height)")	
+	#plt.ylabel(f"{dataName} (from integral)")
 	plt.legend(loc="best")
 	plt.grid()
 	plt.xlim([-10,1.1*np.max(trueEn)])
@@ -79,7 +89,8 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	
 	#Print fit equations to terminal
 	print(f"Peak linear fit: y={coef[0]:.3f}x+{coef[1]:.3f}")
-	print(f"Peak quadratic fit: y={coef2[0]:.4f}x$^2$+{coef2[1]:.3f}x+{coef2[2]:.3f}")
+	print(f"Peak quadratic fit: y={coef2[0]:.5f}x$^2$+{coef2[1]:.3f}x+{coef2[2]:.3f}")
+	print(f"Peak 3rd deg poly fit: y={coef3[0]:.3f}x$^3$+{coef3[1]:.3f}x$^2$+{coef3[2]:.3f}x + {coef3[3]:.3f}")
 	print(f"y={popt[0]:.3f}*sqrt(x)+{popt[1]:.3f}")
 
 	#fit opposite orientation so that scaling is easier
@@ -92,23 +103,26 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	datain = RealData(amp1_p, trueEn, sx=err_p)
 	lin_model = Model(lin_odr)
 	quad_model = Model(quad_odr)
+	tri_model = Model(tri_odr)
 	sqrt_model = Model(sqrt_odr)
 	odr_lin = ODR(datain,lin_model,[1,1e-8])
 	odr_quad = ODR(datain, quad_model,[1e-8,1e-8,1e-8])
+	odr_tri = ODR(datain, tri_model,[1e-8,1e-8,1e-8,1e-8])
 	odr_sqrt = ODR(datain, sqrt_model,[1e-8,1e-8])
 	out_lin=odr_lin.run()
 	out_quad = odr_quad.run()
+	out_tri = odr_tri.run()
 	out_sqrt=odr_sqrt.run()
 	coef_fit = out_lin.beta
 	coef2_fit=out_quad.beta
-	coef3_fit=out_quad.beta
+	coef3_fit=out_tri.beta
+	coef4_fit=out_sqrt.beta
 	
-
 	
 	#AMANDA - goodness of fit value
 	#return ideal fit only - quad
 	
-	return coef2_fit
+	return coef3_fit
 	
 ###########################################################################
 #injection=[i*0.1 for i in range(1,19)]injection=[i*0.1 for i in range(1,3)]
@@ -126,7 +140,7 @@ fitLow_p=[0.05,0.25,0.29,0.17]
 fitLow_i=[150,725,1700,300,200]
 
 
-"""
+
 i=0
 enRes_tmp, mu_tmp=[], []
 for file in fileList:
@@ -157,7 +171,7 @@ enResFitting.printParams_edge(homeDir+file, poptI, enResI, pcovI, savePlots, int
 enResArr.append([enRes,enResI])
 muArr.append([popt[2],poptI[2]])
 
-"""
+
 
 
 
@@ -181,9 +195,11 @@ for j in range(len(sigmaArr)):
 
 
 #zero energy point
-muArr.insert(0,[1e-8,1e-8])
-energyList.insert(0,1e-8)
-errArr.insert(0,[1e-8,1e-8])
+#muArr.insert(0,[1e-8,1e-8])
+
+#muArr.insert(0,[0.005,0.005])
+#energyList.insert(0,1e-8)
+#errArr.insert(0,[1e-8,1e-8])
 
 coef_p =energyCalibFit(energyList, muArr, errArr, "Fit Mean [V]",homeDir)	
 
