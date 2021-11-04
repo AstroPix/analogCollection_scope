@@ -4,6 +4,7 @@ import h5py
 import scipy
 from scipy.optimize import curve_fit
 from scipy import special
+from scipy.integrate import quad
 
 #################
 #
@@ -50,15 +51,6 @@ def enResPlot(settings, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1'):
 	dsName=dataset
 	data=f[dsName+datain]
 	scaling=f[dsName+'_scaling']
-	#yzero=scaling[2]
-	#ymult=scaling[3]
-	#yoff=scaling[4]
-	#print("YOFF")
-	#print(yoff)
-	#print("YZERO")
-	#print(yzero)
-	#print("YMULT")
-	#print(ymult)
 	
 	#Create arrays for binning based on scope resolution
 	xBinWidth=scaling[3]#YMULT Value
@@ -95,6 +87,10 @@ def enResPlot(settings, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1'):
 	
 	#Calculate energy resolution
 	enRes = (2.355*abs(Sigma)*100)/Mu # Calculates energy resolution, 2.355 converts sigma to FWHM
+	
+	#Calculate N (events under fit)
+	integ=scipy.integrate.quad(Gauss, -np.inf, np.inf, args=(Amp,Mu,Sigma))
+	print(integ)
 	
 	#Display fit on final histogram
 	plt.rc('text', usetex=True) #use Latex
@@ -197,14 +193,14 @@ def enResPlot_scale(settings, coef, integral=0, fitLow=0, fitHigh=np.inf, datase
 	dsName=dataset
 	data=f[dsName+datain]
 	#linear fit
-	#data=[((x-coef[1])/coef[0]) for x in data]
+	#data=[(coef[0]*x+coef[1]]) for x in data]
 	#quadratic fit
 	data=[(coef[0]*x*x+coef[1]*x+coef[2]) for x in data]
 	#sqrt fit
 	#data=[(coef[0]*np.sqrt(x)+coef[1]) for x in data]
 	
 	#Create arrays for binning based on scope resolution
-	xBinWidth=1.0 #1.0keV bins
+	xBinWidth=0.5 #1.0keV bins
 	xMax=np.max(data)
 	#give negative space to see full distribution
 	if integral>0:
@@ -318,6 +314,10 @@ def enResPlot_edge(settings, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1
 	
 	#Calculate energy resolution
 	enRes = (2.355*abs(Sigma)*100)/Mu # Calculates energy resolution, 2.355 converts sigma to FWHM
+	
+	#Calculate N (events under fit)
+	integ=scipy.integrate.quad(Edge, -2*Sigma, 2*Sigma, args=(Amp1,Amp2,Mu,Sigma))
+	print(integ)
 	
 	#Display fit on final histogram
 	plt.rc('text', usetex=True) #use Latex
