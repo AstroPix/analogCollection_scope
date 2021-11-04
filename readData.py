@@ -25,6 +25,7 @@
 import numpy as np
 import time
 import h5py
+import pyvisa as visa
 
 def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000), signal_range = (2000,10000)):
 
