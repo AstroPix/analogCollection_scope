@@ -77,7 +77,10 @@ def enResPlot(settings, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1'):
 	if muGuess>fitHigh or muGuess<fitLow:
 		muGuess=binCenters[low_i]+(binCenters[high_i]-binCenters[low_i])/2.
 	ampGuess=ydata[low_i:high_i].max()
-	p01 = [ampGuess, muGuess, muGuess/2.]
+	sigGuess=sum(ydata*(binCenters-muGuess)**2)
+	if integral>0:
+		sigGuess=muGuess/2.
+	p01 = [ampGuess, muGuess, sigGuess]
 	
 	#Fit histogram over desired range
 	popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000)
@@ -153,7 +156,7 @@ def printParams(file, popt, en_res, pcov, savePlots,integral=False):
 	if savePlots:
 		saveto=file[:-5]
 		saveto=f"{saveto}_run1{datain}EnRes.txt"
-		k=open(saveto, "a")
+		k=open(saveto, "w")
 		k.write("Amplitude = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp, Mu, Sigma)+"\n")
 		k.write("Energy resolution = %0.2f" %(abs(en_res))+"%\n")
 		k.write("Error in amplitude = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp_err, Mu_err, Sigma_err)+"\n")
@@ -363,7 +366,7 @@ def printParams_edge(file, popt, en_res, pcov, savePlots,integral=False):
 	if savePlots:
 		saveto=file[:-5]
 		saveto=f"{saveto}_run1{datain}EnRes.txt"
-		k=open(saveto, "a")
+		k=open(saveto, "w")
 		k.write("Amplitude erfc= %d Amplitude const = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp1, Amp2, Mu, Sigma)+"\n")
 		k.write("Energy resolution = %0.2f" %(abs(en_res))+"%\n")
 		k.write("Error in erfc amplitude = %0.3f \nError in erfc constant = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp1_err, Amp2_err, Mu_err, Sigma_err)+"\n")
