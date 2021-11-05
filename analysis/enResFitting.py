@@ -90,7 +90,6 @@ def enResPlot(settings, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1'):
 	
 	#Calculate N (events under fit)
 	integ=scipy.integrate.quad(Gauss, -np.inf, np.inf, args=(Amp,Mu,Sigma))
-	print(integ)
 	
 	#Display fit on final histogram
 	plt.rc('text', usetex=True) #use Latex
@@ -116,7 +115,7 @@ def enResPlot(settings, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1'):
 	
 	f.close()
 
-	return popt, enRes, pcov
+	return popt, enRes, pcov, integ
 	
 	
 #Return lowest recorded data value
@@ -246,12 +245,13 @@ def enResPlot_scale(settings, coef, integral=0, fitLow=0, fitHigh=np.inf, datase
 	plt.legend(loc="best")
 	plt.xlabel('Calibrated Energy [keV]')
 	plt.ylabel('Counts')
-	plt.title(f"Energy Resolution - {title}, pixel {pixel}")
+	plt.title(f"Calibrated {title}, pixel {pixel}")
 		
 	
 	#save figure
 	saveto=file[:-5]
-	saveto=f"{saveto}{datain}EnRes{enRes:.2f}.pdf"
+	#saveto=f"{saveto}{datain}_calibrated_EnRes{enRes:.2f}.pdf"
+	saveto=f"{saveto}{datain}_calibrated_proposal.pdf"
 	plt.savefig(saveto) if savePlots else plt.show()
 	plt.clf()
 	
@@ -319,7 +319,6 @@ def enResPlot_edge(settings, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1
 	
 	#Calculate N (events under fit)
 	integ=scipy.integrate.quad(Edge, -2*Sigma, 2*Sigma, args=(Amp1,Amp2,Mu,Sigma))
-	print(integ)
 	
 	#Display fit on final histogram
 	plt.rc('text', usetex=True) #use Latex
@@ -345,7 +344,7 @@ def enResPlot_edge(settings, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1
 	
 	f.close()
 
-	return popt, enRes, pcov
+	return popt, enRes, pcov, integ
 	
 #Calculate error on fit parameters, save in text file	
 def printParams_edge(file, popt, en_res, pcov, savePlots,integral=False):
