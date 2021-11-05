@@ -25,8 +25,9 @@
 import numpy as np
 import time
 import h5py
+import pyvisa as visa
 
-def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000), signal_range = (2000,10000)):
+def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000), signal_range = (2000,10000), overwrite=False, useTraceLimit=False):
 
     # Determines number of points from each scope trace and creates an empty array
     _, last_trace = scope.read_triggered_event()
@@ -78,7 +79,7 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
                 peaks.append( np.max(trace_scaled)  )
                 peakIndex = np.argmax(trace_scaled, axis=0) #approximate location of signal pulse from highest measurement
                 peakTime = time_scaled[peakIndex]
-                integrals.append( np.sum(trace_scaled[signal_range[0]:signal_range[1]] ) )    
+                integrals.append( np.sum(trace_scaled[signal_range[0]:signal_range[1]] ) )  
                 
         
         # Code to override Visa errors:
@@ -88,15 +89,20 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
             i -= 1 
         
         i += 1       
-    
-    
+        if useTraceLimit and i >= no_of_traces:
+            break
+
     t_stop = time.time()
     
     run_len = t_stop - t_start
     run_min = run_len / 60
     print(f"Recorded {i} traces in {run_min:0.3f} minutes. Average rate: {i/run_len:.2f} Hz")
 
-    
+    if overwrite:
+        for name in ["", "_t", "_peaks", "_integral", "_baseline", "_peakTime"]: 
+            if (data_set_name + name) in file:
+                del file[data_set_name + name]
+
     file.create_dataset(data_set_name, data=np.array(arr))    
     file.create_dataset(data_set_name+"_t", data=np.array(time_axis))   
     file.create_dataset(data_set_name+"_peaks", data=np.array(peaks))   

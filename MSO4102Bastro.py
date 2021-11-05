@@ -24,6 +24,9 @@ class Scope():
         self.write = self.resource.write
         self.query = self.resource.query
 
+        self.write("WFMOUTPRE:ENCDG ASC")
+        self.write("DATa:WIDth 2")
+
     def ask(self, question):
         if question[-1] != "?":
             question += "?"
@@ -55,6 +58,21 @@ class Scope():
         self.write(":TRIG:A:EDGE:SLOPE {0:s}".format(edge))
         self.write(':TRIG:A:LEVEL:CH{0:d} {1:f}'.format(channel, threshold/1000.))
 
+    def get_trigger_config(self):
+
+        command_list = ["EDGE:SOURCE", 
+                        "EDGE:SLOPE", 
+                        "LEVEL"]
+
+        trigger_config_dict = {}
+        for command in command_list:
+            cmd = ":TRIG:A:" + command + "?"
+            #print(cmd)
+            val = self.query(cmd)
+            trigger_config_dict[command] = val.rstrip('\n')
+
+        return trigger_config_dict
+
     def get_source_channel(self, verbose=False):
         '''
         Returns the data channel from the scope.
@@ -71,7 +89,10 @@ class Scope():
         '''
         Set the data return channel on the scope.
         '''
-        self.write(":DATA:SOURCE {0:d}".format(channel))
+        if not channel in [1,2,3,4]:
+            print("Warning, channel should be one of 1,2,3,4")
+
+        self.write(":DATA:SOURCE CH{0:d}".format(channel))
 
     def read_scaling_config(self, verbose=False):
         '''
@@ -116,10 +137,7 @@ class Scope():
         y_mult = float(scaling_dict['YMULT'])
         y_offset = float(scaling_dict['YOFF'])
 
-        x_points = np.empty(len(curve))
-        for i in range(len(curve)):
-            x_points[i] = x_zero + x_incr * i
-
+        x_points = x_zero + x_incr * np.arange(0, len(curve))
         y_points = (curve - y_offset) * y_mult + y_zero
 
         return x_points, y_points
