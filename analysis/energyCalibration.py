@@ -124,28 +124,35 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	out_sqrt=odr_sqrt.run()
 	coef4_fit=out_sqrt.beta
 	
+	print(f"14.41 keV measured at {coef3[0]*14.41*14.41*14.41+coef3[1]*14.41*14.41+coef3[2]*14.41+coef3[3]}V")
+	
 	
 	#AMANDA - goodness of fit value
-	#return ideal fit only - 3rd deg polynomialpython 
+	#return ideal fit only - 3rd deg polynomial
 	
 	return coef3_fit
 	
+	
+	
+########################################################################################
 ###########################################################################
-#injection=[i*0.1 for i in range(1,19)]injection=[i*0.1 for i in range(1,3)]
-
+##############################################################
 
 enResArr, muArr, sigmaArr, nArr = [],[],[], []
 homeDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp/"
 
+#files to be used for energy calibration curve
 fileList=["102021_amp1/cadmium109_45min.h5py", "102821_amp1/cadmium109_16h.h5py", "102021_amp1/cobalt57_14h.h5py","110421_amp1/Americium_480min_combined.h5py"] #"102921_amp1/americium241_90min.h5py"]
 energyList=[22.16, 88.03, 122.06, 59.54]
 nameList=["Cadmium109", "Cadmium109", "Cobalt57", "Americium241"]
 
+#fine-tune the range so that individual peaks are picked out
 fitLow_p=[0.05,0.25,0.29,0.17]
 fitLow_i=[150,725,1700,300,200]
 
 
 
+#loop through all files, fit with Gaussian, return mean/sigma/energy resolution and store in arrays
 i=0
 enRes_tmp, mu_tmp, sigma_tmp, n_tmp=[], [], [], []
 for file in fileList:
@@ -168,7 +175,7 @@ for file in fileList:
 	
 
 
-#Compton edge of Cobalt
+#loop through additional files, fit with integrated Gaussian (for Compton edge), return mean/sigma/energy resolution and store in arrays
 energyList.append(39.46)
 file="102021_amp1/cobalt57_14h.h5py"
 pixel=1
@@ -183,17 +190,16 @@ sigmaArr.append([popt[3], poptI[3]])
 nArr.append([integ,integI])
 
 
+"""
+#to debug fitting - hardcode values
+energyList.append(39.46)
+muArr=[[0.0705,189.6605],[0.2597,742.7046],[0.3049,1812.8481],[0.2042,471.45],[0.151,641.77]]
+muArrErr=[[0.000105,0.518],[0.0006, 1.657],[0.0004,2.687],[0.0007,5.805],[0.0007,8.437]]
+sigmaArr=[[0.012,53.817],[0.0054,28.206],[0.0076,56.683],[0.0061,33.808],[0.0033,65.1507]]
+nArr=[[6.335,67289],[0.678,2.164],[0.809,2.794],[0.428,1.417],[2.234,67744.383]]
+"""
 
-
-
-
-
-#energyList.append(39.46)
-
-#muArr=[[0.0705,189.6605],[0.2597,742.7046],[0.3049,1812.8481],[0.2042,471.45],[0.151,641.77]]
-#muArrErr=[[0.000105,0.518],[0.0006, 1.657],[0.0004,2.687],[0.0007,5.805],[0.0007,8.437]]
-#sigmaArr=[[0.012,53.817],[0.0054,28.206],[0.0076,56.683],[0.0061,33.808],[0.0033,65.1507]]
-#nArr=[[6.335,67289],[0.678,2.164],[0.809,2.794],[0.428,1.417],[2.234,67744.383]]
+#calculate error
 errArr=[]
 
 #error array = sigma/sqrt(N) (for edge, 2sig integral from mu)
@@ -202,17 +208,11 @@ for j in range(len(sigmaArr)):
 	err_i=sigmaArr[j][1]/np.sqrt(nArr[j][1])
 	errArr.append([err_p,err_i])
 
-
-#zero energy point
-#muArr.insert(0,[1e-8,1e-8])
-
-#muArr.insert(0,[0.005,0.005])
-#energyList.insert(0,1e-8)
-#errArr.insert(0,[1e-8,1e-8])
-
+#use fit mean of measured peaks and associated error to create calibration curve
 coef_p =energyCalibFit(energyList, muArr, errArr, "Fit Mean [V]",homeDir)	
 
 
+#use calibration curve to calibrate a spectrum
 file="110421_amp1/Americium_480min_combined.h5py"
 settings=[homeDir+file, "Americium241", 1, savePlots]
 popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p,fitLow=50)
