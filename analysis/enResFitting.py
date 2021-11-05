@@ -77,13 +77,16 @@ def enResPlot(settings, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1'):
 	if muGuess>fitHigh or muGuess<fitLow:
 		muGuess=binCenters[low_i]+(binCenters[high_i]-binCenters[low_i])/2.
 	ampGuess=ydata[low_i:high_i].max()
-	sigGuess=sum(ydata*(binCenters-muGuess)**2)
-	if integral>0:
-		sigGuess=muGuess/2.
+	sigGuess=muGuess/2.
 	p01 = [ampGuess, muGuess, sigGuess]
 	
 	#Fit histogram over desired range
-	popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000)
+	try:
+		popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000)
+	except RuntimeError: #fit could not converge
+		sigGuess=sum(ydata*(binCenters-muGuess)**2)
+		p01 = [ampGuess, muGuess, sigGuess]
+		popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000)
 	(Amp,Mu,Sigma)=popt
 	#range is set with low_i and high_i index values for input arrays
 	#bounds keeps all parameters positive
