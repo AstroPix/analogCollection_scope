@@ -60,7 +60,7 @@ def enResPlot(settings, integral=0, fitLow=0, fitHigh=np.inf, dataset='run1'):
 	else:
 		xMin=0
 	if integral>0:
-		xBinWidth*=integral
+		xBinWidth=integral
 	binEdges=np.arange(xMin,xMax+xBinWidth,xBinWidth)#use peakMax+xBinWidth to overshoot range and include all data
 	
 	#Create histogram of data
@@ -257,7 +257,7 @@ def enResPlot_scale(settings, coef, integral=0, fitLow=0, fitHigh=np.inf, datase
 	#save figure
 	saveto=file[:-5]
 	#saveto=f"{saveto}{datain}_calibrated_EnRes{enRes:.2f}.pdf"
-	saveto=f"{saveto}{datain}_calibrated_proposal.pdf"
+	saveto=f"{saveto}{datain}_calibrated.pdf"
 	plt.savefig(saveto) if savePlots else plt.show()
 	plt.clf()
 	

@@ -72,8 +72,9 @@ for inj in injection:
 		settings=[file, f"{inj:.1f}V injection", pixel, savePlots]
 		popt, enRes, pcov, integ = enResFitting.enResPlot(settings)
 		enResFitting.printParams(file, popt, enRes, pcov, savePlots)
-		poptI, enResI, pcovI, integ = enResFitting.enResPlot(settings, integral=1000/(inj+0.1))
-		enResFitting.printParams(file, poptI, enResI, pcovI, savePlots, integral=1000/(inj+0.1))
+		#integral argument = integral bin size (in V)
+		poptI, enResI, pcovI, integ = enResFitting.enResPlot(settings, integral=5*(inj+0.1))
+		enResFitting.printParams(file, poptI, enResI, pcovI, savePlots, integral=True)
 		enRes_tmp.append([enRes, enResI])
 		mu_tmp.append([popt[1], poptI[1]])
 	enResArr.append(enRes_tmp)
