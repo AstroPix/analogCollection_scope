@@ -24,8 +24,13 @@
     """
 import numpy as np
 import time
+from datetime import datetime
 import h5py
 import pyvisa as visa
+import logging
+from logging.handlers import TimedRotatingFileHandler
+import os
+import glob
 
 def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000), signal_range = (2000,10000), overwrite=False, useTraceLimit=False):
 
@@ -39,7 +44,8 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
     arr = []
     peaks = []
     integrals = []
-    peakTime =[]
+    peakTime = []
+    trigTime = []
     baseline = []
     
     n_bad_comm = 0
@@ -55,8 +61,15 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
     
     print(f"Starting {run_time} minute run; will be done at {bla}")
     
+    #set up logs in case run crashes
+    logger = logging.getLogger("mylog")
+    logger.setLevel(logging.INFO)
+    #create a log every 10 minutes, save only 3 before deleting the oldest one
+    handler = TimedRotatingFileHandler('../dataOut/output.log', when='m', interval=10, backupCount=3)
+    logger.addHandler(handler)
+    
     while time.time() < t_end:
-        # Code to discount duplicates (when the scope gets stuck on a trigger):
+        # Code to discount duplicates (when the scope gets stuck on a trigger):    
         
         try: 
             _, trace = scope.read_triggered_event()
@@ -67,6 +80,9 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
                 print("%d duplicates" %(n_dup))
             else:
                 last_trace = trace
+                ttime=datetime.now() #returns local time
+                ttime_str=ttime.strftime('%d %b %Y %H:%M:%S.%f')
+                trigTime.append(ttime_str)
                 time_scaled, trace_scaled = scope.scale_data(scaling_dict, trace)
                 
                 if (no_of_traces < 0) or (i < no_of_traces):
@@ -81,13 +97,15 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
                 peakTime = time_scaled[peakIndex]
                 integrals.append( np.sum(trace_scaled[signal_range[0]:signal_range[1]] ) )  
                 
+                logger.info(f"Event {i}, {ttime_str}")
+                
         
         # Code to override Visa errors:
         except visa.VisaIOError:
             n_bad_comm += 1
             print("Communication timeout... %d" %(n_bad_comm))
             i -= 1 
-        
+       
         i += 1       
         if useTraceLimit and i >= no_of_traces:
             break
@@ -99,7 +117,7 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
     print(f"Recorded {i} traces in {run_min:0.3f} minutes. Average rate: {i/run_len:.2f} Hz")
 
     if overwrite:
-        for name in ["", "_t", "_peaks", "_integral", "_baseline", "_peakTime"]: 
+        for name in ["", "_t", "_peaks", "_integral", "_baseline", "_peakTime", "_trigTime"]: 
             if (data_set_name + name) in file:
                 del file[data_set_name + name]
 
@@ -108,8 +126,18 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
     file.create_dataset(data_set_name+"_peaks", data=np.array(peaks))   
     file.create_dataset(data_set_name+"_integral", data=np.array(integrals))   
     file.create_dataset(data_set_name+"_baseline", data=np.array(baseline)) 
-    file.create_dataset(data_set_name+"_peakTime", data=np.array(peakTime))     
-
-    return
+    file.create_dataset(data_set_name+"_peakTime", data=np.array(peakTime))   
+    file.create_dataset(data_set_name+"_trigTime", data=trigTime)
+    
+    
+    #if method ran successfully, get rid of log files
+    successfulLogs=glob.glob("../dataOut/output.log*")
+    for log in successfulLogs:
+        try:
+            os.remove(log)
+        except:
+            print(f"ERROR - Couldn't remove {log}")
+    
+    return 
 
 
