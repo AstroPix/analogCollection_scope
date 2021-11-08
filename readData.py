@@ -24,6 +24,7 @@
     """
 import numpy as np
 import time
+from datetime import datetime
 import h5py
 import pyvisa as visa
 
@@ -39,7 +40,8 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
     arr = []
     peaks = []
     integrals = []
-    peakTime =[]
+    peakTime = []
+    trigTime = []
     baseline = []
     
     n_bad_comm = 0
@@ -67,6 +69,8 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
                 print("%d duplicates" %(n_dup))
             else:
                 last_trace = trace
+                ttime=datetime.now() #returns local time
+                trigTime.append(ttime.strftime('%d %b %Y %H:%M:%S.%f'))
                 time_scaled, trace_scaled = scope.scale_data(scaling_dict, trace)
                 
                 if (no_of_traces < 0) or (i < no_of_traces):
@@ -99,7 +103,7 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
     print(f"Recorded {i} traces in {run_min:0.3f} minutes. Average rate: {i/run_len:.2f} Hz")
 
     if overwrite:
-        for name in ["", "_t", "_peaks", "_integral", "_baseline", "_peakTime"]: 
+        for name in ["", "_t", "_peaks", "_integral", "_baseline", "_peakTime", "_trigTime"]: 
             if (data_set_name + name) in file:
                 del file[data_set_name + name]
 
@@ -108,8 +112,10 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
     file.create_dataset(data_set_name+"_peaks", data=np.array(peaks))   
     file.create_dataset(data_set_name+"_integral", data=np.array(integrals))   
     file.create_dataset(data_set_name+"_baseline", data=np.array(baseline)) 
-    file.create_dataset(data_set_name+"_peakTime", data=np.array(peakTime))     
-
-    return
+    file.create_dataset(data_set_name+"_peakTime", data=np.array(peakTime))   
+    file.create_dataset(data_set_name+"_trigTime", data=trigTime)
+    
+    
+    return 
 
 
