@@ -32,10 +32,13 @@ from logging.handlers import TimedRotatingFileHandler
 import os
 import glob
 
-def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000), signal_range = (2000,10000), overwrite=False, useTraceLimit=False):
+def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000), signal_range = (2000,10000), overwrite=False, useTraceLimit=False, writeEvery_s = 600, writeEvery_i = 100):
     
     # Scaling dictionary is used to scale the scope traces to account for scope settings
     scaling_dict = scope.read_scaling_config()
+    
+    tempFileName = outDir + "_temp_" + outFileName + '.h5py'
+    finalFileName = outDir + outFileName + '.h5py'
     
     arr = []
     peaks = []
@@ -51,6 +54,10 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
     n_dup = 0
     single = True
     
+    last_written_s = t_start
+    last_written_i = -1
+    part_j = 0
+
     time_axis = None
     
     bla = time.strftime('%a, %d %b %Y %H:%M:%S', time.localtime(t_end) )
@@ -62,13 +69,12 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
     logger.setLevel(logging.INFO)
     
     #create a log every 10 minutes, save only 3 before deleting the oldest one
-    handler = TimedRotatingFileHandler('../dataOut/output.log', when='m', interval=10, backupCount=3)
+    handler = TimedRotatingFileHandler(f'{outDir}/output.log', when='m', interval=10, backupCount=3)
     logger.addHandler(handler)
     
     # Read once to fill "last trace" array
     _, last_trace = scope.read_triggered_event()
     last_trace = np.array(last_trace.split(','), dtype="int")
-
     
     while time.time() < t_end:
         # Code to discount duplicates (when the scope gets stuck on a trigger):    
@@ -98,6 +104,33 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
                 peakTime = time_scaled[peakIndex]
                 integrals.append( np.sum(trace_scaled[signal_range[0]:signal_range[1]] ) )  
                 
+                if (writeEvery_s and ttime >= last_written_s + writeEvery_s) or (writeEvery_i and i >= last_written_i + writeEvery_i):
+                
+                    #write partial data into temp file
+                    with h5py.File(tempFileName, 'a') as file:
+                
+                        if overwrite:
+                            for name in ["_peaks", "_integral", "_baseline", "_peakTime", "_trigTime"]:
+                                if (data_set_name + name + f"_part{part_j}") in file:
+                                    del file[data_set_name + name + f"_part{part_j}"]
+
+                        file.create_dataset(data_set_name+"_peaks" + f"_part{part_j}", data=np.array(peaks))
+                        file.create_dataset(data_set_name+"_integral" + f"_part{part_j}", data=np.array(integrals))
+                        file.create_dataset(data_set_name+"_baseline" + f"_part{part_j}", data=np.array(baseline))
+                        file.create_dataset(data_set_name+"_peakTime" + f"_part{part_j}", data=np.array(peakTime))
+                        file.create_dataset(data_set_name+"_trigTime" + f"_part{part_j}", data=np.array(trigTime))
+
+                    #reset data in memory
+                    peaks = []
+                    integrals = []
+                    baseline = []
+                    peakTime = []
+                    trigTime = []
+                    
+                    part_j += 1
+                    last_written_s = ttime
+                    last_written_i = i
+                    
                 logger.info(f"Event {i}, {ttime_str}")
                 
         
@@ -112,25 +145,59 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
             break
 
     t_stop = time.time()
+
+
+                
+    with h5py.File(tempFileName, 'a') as file:
+    #write the rest of data in memory
     
+        if overwrite:
+            for name in ["_peaks", "_integral", "_baseline", "_peakTime", "_trigTime"]:
+                if (data_set_name + name + f"_part{part_j}") in file:
+                    del file[data_set_name + name + f"_part{part_j}"]
+
+        file.create_dataset(data_set_name+"_peaks" + f"_part{part_j}", data=np.array(peaks))
+        file.create_dataset(data_set_name+"_integral" + f"_part{part_j}", data=np.array(integrals))
+        file.create_dataset(data_set_name+"_baseline" + f"_part{part_j}", data=np.array(baseline))
+        file.create_dataset(data_set_name+"_peakTime" + f"_part{part_j}", data=np.array(peakTime))
+        file.create_dataset(data_set_name+"_trigTime" + f"_part{part_j}", data=np.array(trigTime))
+
+
     run_len = t_stop - t_start
     run_min = run_len / 60
     print(f"Recorded {i} traces in {run_min:0.3f} minutes. Average rate: {i/run_len:.2f} Hz")
 
-    if overwrite:
-        for name in ["", "_t", "_peaks", "_integral", "_baseline", "_peakTime", "_trigTime"]: 
-            if (data_set_name + name) in file:
-                del file[data_set_name + name]
 
-    file.create_dataset(data_set_name, data=np.array(arr))    
-    file.create_dataset(data_set_name+"_t", data=np.array(time_axis))   
-    file.create_dataset(data_set_name+"_peaks", data=np.array(peaks))   
-    file.create_dataset(data_set_name+"_integral", data=np.array(integrals))   
-    file.create_dataset(data_set_name+"_baseline", data=np.array(baseline)) 
-    file.create_dataset(data_set_name+"_peakTime", data=np.array(peakTime))   
-    file.create_dataset(data_set_name+"_trigTime", data=trigTime)
+    #collect final output data
+    final_data = {}
+    with h5py.File(tempFileName, 'r') as tempfile:
+        for name in ["_peaks", "_integral", "_baseline", "_peakTime", "_trigTime"]:
+            final_data[name] = []
+                for j in range(0, part_j+1):
+                    final_data[name].append( tempfile[name+f"+_part{j}"] )
+
+
+    #write final output data
+    with h5py.File(finalFileName, 'a') as file:
+
+        if overwrite:
+            for name in ["", "_t", "_peaks", "_integral", "_baseline", "_peakTime", "_trigTime"]:
+                if (data_set_name + name) in file:
+                    del file[data_set_name + name]
+
+        file.create_dataset(data_set_name, data=np.array(arr))
+        file.create_dataset(data_set_name+"_t", data=np.array(time_axis))
+        
+        for name in ["_peaks", "_integral", "_baseline", "_peakTime", "_trigTime"]:
+            file.create_dataset(data_set_name + name, data= np.concatenate(final_data[name]))
     
-    
+    print(f"Wrote output file {finaleFileName}")
+    try:
+        os.remove( tempFileName )
+    except:
+        print(f"ERROR - Couldn't remove {tempFileName}")
+
+
     #if method ran successfully, get rid of log files
     successfulLogs=glob.glob("../dataOut/output.log*")
     for log in successfulLogs:
