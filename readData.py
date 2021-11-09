@@ -80,7 +80,7 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
         # Code to discount duplicates (when the scope gets stuck on a trigger):    
         
         try: 
-            ttime, trace = scope.read_triggered_event()
+            event_time, trace = scope.read_triggered_event()
             trace = np.array([int(s) for s in trace.split(',')])
             if np.sum(trace - last_trace) == 0:
                 i -= 1
@@ -88,8 +88,8 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
                 print("%d duplicates" %(n_dup))
             else:
                 last_trace = trace
-                ttime_str=ttime.strftime('%d %b %Y %H:%M:%S.%f')
-                trigTime.append(ttime)
+                ttime_str=time.strftime('%d %b %Y %H:%M:%S.%f', time.localtime(event_time))
+                trigTime.append(event_time)
                 time_scaled, trace_scaled = scope.scale_data(scaling_dict, trace)
                 
                 if (no_of_traces < 0) or (i < no_of_traces):
