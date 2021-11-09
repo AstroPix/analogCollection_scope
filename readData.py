@@ -108,7 +108,7 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
                 peakTime = time_scaled[peakIndex]
                 integrals.append( np.sum(trace_scaled[signal_range[0]:signal_range[1]] ) )  
                 
-                if (writeEvery_s and ttime >= last_written_s + writeEvery_s) or (writeEvery_i and i >= last_written_i + writeEvery_i):
+                if (writeEvery_s and event_time >= last_written_s + writeEvery_s) or (writeEvery_i and i >= last_written_i + writeEvery_i):
                 
                     #write partial data into temp file
                     with h5py.File(tempFileName, 'a') as file:
@@ -132,7 +132,7 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
                     trigTime = []
                     
                     part_j += 1
-                    last_written_s = ttime
+                    last_written_s = event_time
                     last_written_i = i
                     
                 logger.info(f"Event {i}, {ttime_str}")
