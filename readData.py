@@ -195,7 +195,7 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
         for name in ["_peaks", "_integral", "_baseline", "_peakTime", "_trigTime"]:
             file.create_dataset(data_set_name + name, data= np.concatenate(final_data[name]))
     
-    print(f"Wrote output file {finaleFileName}")
+    print(f"Wrote output file {finalFileName}")
     try:
         os.remove( tempFileName )
     except:
