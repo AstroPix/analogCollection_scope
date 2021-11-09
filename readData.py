@@ -173,8 +173,8 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
     with h5py.File(tempFileName, 'r') as tempfile:
         for name in ["_peaks", "_integral", "_baseline", "_peakTime", "_trigTime"]:
             final_data[name] = []
-                for j in range(0, part_j+1):
-                    final_data[name].append( tempfile[name+f"+_part{j}"] )
+            for j in range(0, part_j+1):
+                final_data[name].append( tempfile[name+f"+_part{j}"] )
 
 
     #write final output data
