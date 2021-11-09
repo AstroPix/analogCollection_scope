@@ -33,10 +33,6 @@ import os
 import glob
 
 def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_range = (0, 2000), signal_range = (2000,10000), overwrite=False, useTraceLimit=False):
-
-    # Determines number of points from each scope trace and creates an empty array
-    _, last_trace = scope.read_triggered_event()
-    last_trace = np.array([int(s) for s in last_trace.split(',')])
     
     # Scaling dictionary is used to scale the scope traces to account for scope settings
     scaling_dict = scope.read_scaling_config()
@@ -64,15 +60,21 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
     #set up logs in case run crashes
     logger = logging.getLogger("mylog")
     logger.setLevel(logging.INFO)
+    
     #create a log every 10 minutes, save only 3 before deleting the oldest one
     handler = TimedRotatingFileHandler('../dataOut/output.log', when='m', interval=10, backupCount=3)
     logger.addHandler(handler)
+    
+    # Read once to fill "last trace" array
+    _, last_trace = scope.read_triggered_event()
+    last_trace = np.array(last_trace.split(','), dtype="int")
+
     
     while time.time() < t_end:
         # Code to discount duplicates (when the scope gets stuck on a trigger):    
         
         try: 
-            _, trace = scope.read_triggered_event()
+            ttime, trace = scope.read_triggered_event()
             trace = np.array([int(s) for s in trace.split(',')])
             if np.sum(trace - last_trace) == 0:
                 i -= 1
@@ -80,9 +82,8 @@ def get_data(file, scope, run_time, data_set_name, no_of_traces = 100, noise_ran
                 print("%d duplicates" %(n_dup))
             else:
                 last_trace = trace
-                ttime=datetime.now() #returns local time
                 ttime_str=ttime.strftime('%d %b %Y %H:%M:%S.%f')
-                trigTime.append(ttime_str)
+                trigTime.append(ttime)
                 time_scaled, trace_scaled = scope.scale_data(scaling_dict, trace)
                 
                 if (no_of_traces < 0) or (i < no_of_traces):
