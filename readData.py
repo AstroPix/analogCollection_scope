@@ -88,7 +88,11 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
                 print("%d duplicates" %(n_dup))
             else:
                 last_trace = trace
-                ttime_str=time.strftime('%d %b %Y %H:%M:%S.%f', time.localtime(event_time))
+
+                #convert time to string for log file
+                _, f = divmod( event_time , 1)
+                ttime_str=time.strftime('%d %b %Y %H:%M:%S', time.localtime(event_time)) + f".{f:.6f}"
+
                 trigTime.append(event_time)
                 time_scaled, trace_scaled = scope.scale_data(scaling_dict, trace)
                 
