@@ -178,7 +178,7 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
         for name in ["_peaks", "_integral", "_baseline", "_peakTime", "_trigTime"]:
             final_data[name] = []
             for j in range(0, part_j+1):
-                final_data[name].append( tempfile[data_set_name + name + f"+_part{j}"] )
+                final_data[name].append( tempfile[data_set_name + name + f"_part{j}"] )
 
 
     #write final output data
