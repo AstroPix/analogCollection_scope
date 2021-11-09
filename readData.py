@@ -105,7 +105,7 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
                 trace_scaled -= noise_sample
                 peaks.append( np.max(trace_scaled)  )
                 peakIndex = np.argmax(trace_scaled, axis=0) #approximate location of signal pulse from highest measurement
-                peakTime = time_scaled[peakIndex]
+                peakTime.append( time_scaled[peakIndex] )
                 integrals.append( np.sum(trace_scaled[signal_range[0]:signal_range[1]] ) )  
                 
                 if (writeEvery_s and event_time >= last_written_s + writeEvery_s) or (writeEvery_i and i >= last_written_i + writeEvery_i):
