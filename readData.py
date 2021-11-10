@@ -69,7 +69,7 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
     logger.setLevel(logging.INFO)
     
     #create a log every 10 minutes, save only 3 before deleting the oldest one
-    handler = TimedRotatingFileHandler(f'{outDir}/output.log', when='m', interval=10, backupCount=3)
+    handler = TimedRotatingFileHandler('../dataOut/output.log', when='m', interval=10, backupCount=3)
     logger.addHandler(handler)
     
     # Read once to fill "last trace" array
@@ -105,7 +105,7 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
                 trace_scaled -= noise_sample
                 peaks.append( np.max(trace_scaled)  )
                 peakIndex = np.argmax(trace_scaled, axis=0) #approximate location of signal pulse from highest measurement
-                peakTime.append( time_scaled[peakIndex] )
+                peakTime = time_scaled[peakIndex]
                 integrals.append( np.sum(trace_scaled[signal_range[0]:signal_range[1]] ) )  
                 
                 if (writeEvery_s and event_time >= last_written_s + writeEvery_s) or (writeEvery_i and i >= last_written_i + writeEvery_i):
@@ -195,7 +195,7 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
         for name in ["_peaks", "_integral", "_baseline", "_peakTime", "_trigTime"]:
             file.create_dataset(data_set_name + name, data= np.concatenate(final_data[name]))
     
-    print(f"Wrote output file {finalFileName}")
+    print(f"Wrote output file {finaleFileName}")
     try:
         os.remove( tempFileName )
     except:
