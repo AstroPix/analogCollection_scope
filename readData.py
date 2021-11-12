@@ -141,7 +141,8 @@ def get_data(outDir, outFileName, scope, run_time, data_set_name, no_of_traces =
         # Code to override Visa errors:
         except visa.VisaIOError:
             n_bad_comm += 1
-            print("Communication timeout... %d" %(n_bad_comm))
+            if (n_bad_comm < 1000) or (n_bad_comm % 1000 == 0):
+                print("Communication timeout... %d" %(n_bad_comm))
             i -= 1 
        
         i += 1       
