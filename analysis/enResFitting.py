@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py
-import os, glob
+import os, glob, sys
 import scipy
 from scipy.optimize import curve_fit
 from scipy import special, interpolate
@@ -35,9 +35,16 @@ def getArrayIndex(array, low,high):
 	return low_i, high_i
 
 def getSaveto():
-	return "/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/spline1/"
-
-
+	#go to directory where this script (and runOptions) lives
+	os.chdir(sys.path[0])
+	#pull saveDir variable from runOptions
+	with open("runOptions.txt", 'r') as runOptions:
+		lines=runOptions.readlines()
+		for line in lines:
+			if "saveDir = " in line:
+				saveDir = line.split(" = ")[1][:-1]
+	print(saveDir)
+	return saveDir
 
 
 

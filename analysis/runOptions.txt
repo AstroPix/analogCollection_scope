@@ -1,0 +1,22 @@
+#For correct parsing, ensure that the equal sign is flanked by spaces - ' = ' 
+
+#notable directories
+homeDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/
+saveDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/spline1/
+dataDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/fitSpectra/
+
+
+
+#Boolean run options
+# 0 is False, 1 is True
+#Saves plots in `saveDir` if True, displays plots if False
+savePlots = 0
+#Fits all input spectra if true, reads fit parameter values from txt files in `dataDir` if False
+fitSpectra = 0 
+
+#Run options
+#Which pixel / amp
+pix = 1 
+#Which fit function to use for calibration curve
+#fits: [0] linear, [1] quadratic, [2] 3rd deg poly, [3] sqrt, [4] 1deg spline, [5] 3deg spline
+fit = 5

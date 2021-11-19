@@ -9,11 +9,23 @@ import sys,os,glob
 import enResFitting
 
 
-savePlots=False
-fitSpectra=False #False if spectra have already been fit
-pix=1 #1 or 2 - which amp to consider
-#fits: [0] linear, [1] quadratic, [2] 3rd deg poly, [3] sqrt, [4] 1deg spline, [5] 3deg spline
-fit=5
+#Read in settings from runOptions.txt
+inputDict={}
+with open(sys.argv[1], 'r') as runOptions:
+	lines=runOptions.readlines()
+	for line in lines:
+		if "=" in line:
+			readLine = line.split(' = ')
+			inputDict[readLine[0]] = readLine[1][:-1]
+#convert dictionary values into variables
+for key,val in inputDict.items():
+        exec(key + '=val')
+#typeset if necessary
+savePlots=bool(int(savePlots))
+fitSpectra=bool(int(fitSpectra))
+pix=int(pix)
+fit=int(fit)
+
 
 ########################################################################################
 ###########################################################################
@@ -59,7 +71,21 @@ def odr_polyfit(fitdata, deg):
 	odrfit = ODR(fitdata,mod,[1e-8 for x in range(deg+1)])		
 	out=odrfit.run()
 	coef=out.beta
-	return coef
+	res_var=out.res_var
+	sum_square=out.sum_square
+	return coef, res_var, sum_square
+
+def getSumSq(trueEn, voltage, err, coef):
+	sum_square=0
+	for i in range(len(trueEn)):
+		fitVal=interpolate.splev(voltage[i], coef)
+		num = (trueEn[i]-fitVal)**2
+		fitErr=interpolate.splev(err[i],coef)
+		denom = fitErr**2
+		sum_square += (num/denom)
+		i+=1
+	print(f"final sum_square {sum_square}")
+	return sum_square
 
 def getFiles(amp):
 	if amp==1:
@@ -158,7 +184,7 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 		print(f"y={popt[0]:.3f}*sqrt(x)+{popt[1]:.3f}")
 	elif fit==4:
 		tck1 = interpolate.splrep(trueEn_sorted, amp_p_sorted,k=1) #linear spline
-		spline1Plot = interpolate.splev(x, tck)
+		spline1Plot = interpolate.splev(x, tck1)
 		plt.plot(x, spline1Plot, '--g', label="linear spline")
 	elif fit==5:	
 		tck = interpolate.splrep(trueEn_sorted, amp_p_sorted) #cubic spline
@@ -180,27 +206,61 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	#need different regression technique for X-error bars
 	if fit==0:
 		datain = RealData(amp_p, trueEn, sx=err_p)
-		coef_fit = odr_polyfit(datain,1)
+		coef_fit, res_var, sum_square = odr_polyfit(datain,1)
+		fn="m*x + b"
 	elif fit==1:
 		datain = RealData(amp_p, trueEn, sx=err_p)
-		coef_fit = odr_polyfit(datain,2)
+		coef_fit, res_var, sum_square = odr_polyfit(datain,2)
+		fn="a * x *x + b*x + c"
 	elif fit==2:
 		datain = RealData(amp_p, trueEn, sx=err_p)
-		coef_fit = odr_polyfit(datain,3)
+		coef_fit, res_var, sum_square = odr_polyfit(datain,3)
+		fn="a*x*x*x + b*x*x + c*x + d"
 	elif fit==3:
+		datain = RealData(amp_p, trueEn, sx=err_p)
 		sqrt_model = Model(sqrt_odr)
 		odr_sqrt = ODR(datain, sqrt_model,[1e-8,1e-8])
 		out_sqrt=odr_sqrt.run()
 		coef_fit=out_sqrt.beta
+		sum_square=out_sqrt.sum_square
+		res_var=out_sqrt.res_var
+		fn="A*np.sqrt(x)+B"
 	elif fit==4:
 		coef_fit = interpolate.splrep(amp_p_sorted, trueEn_sorted, w=err_p_sorted, k=1)
+		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, coef_fit)
+		ndof = float(len(trueEn)-3-1)#loose 3 dof for continuinty requirements - need extra 1 for poor counting!?
+		print(f"len(trueEn) {len(trueEn)}")
+		res_var = sum_square/ndof
+		fn="spline, k=1"
 	elif fit==5:
 		coef_fit = interpolate.splrep(amp_p_sorted, trueEn_sorted, w=err_p_sorted)
+		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, coef_fit)
+		ndof = float(len(trueEn)-3-1)#loose 3 dof for continuinty requirements - need extra 1 for poor counting!?
+		res_var = sum_square/float(ndof)
+		fn="spline,k=3"
 	
-	
-	#AMANDA - goodness of fit value
-
-
+	#print/save params
+	if savePlots:
+		saveto=f"{saveto}_fit{fit}params.txt"
+		k=open(saveto, "w")
+		k.write("ODR fit (x=measured energy [V], y=true energy [keV])")
+		k.write("chi2/ndf = %0.3f/%d = %0.3f" %(sum_square,int(sum_square/res_var)+1,res_var) +"/n")
+		k.write(fn)
+		k.write("Coefficients: \n")
+		k.write(coef_fit)
+		k.close()
+		#Display contents to terminal
+		m = open(saveto, "r")
+		text = m.read()
+		print(text)
+		m.close()
+	else:
+		print("ODR fit (x=measured energy [V], y=true energy [keV])")
+		print("chi2/ndf = %0.3f/%d = %0.3f" %(sum_square,int(sum_square/res_var)+1,res_var))
+		print(fn)
+		print("Coefficients:")
+		print(coef_fit)
+		
 	return coef_fit
 	
 	
@@ -208,11 +268,6 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 ########################################################################################
 ###########################################################################
 ##############################################################
-
-homeDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp/"
-saveDir = enResFitting.getSaveto()
-dataDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/fitSpectra"
-
 
 #files to be used for energy calibration curve
 #amp1
