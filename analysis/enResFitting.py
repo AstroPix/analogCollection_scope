@@ -35,7 +35,7 @@ def getArrayIndex(array, low,high):
 	return low_i, high_i
 
 def getSaveto():
-	return "/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp2_peaks/spline3/"
+	return "/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/linear/"
 
 
 
@@ -222,8 +222,11 @@ def enResPlot_scale(settings, coef, fitLow=0, fitHigh=np.inf, dataset='run1', in
 	f = h5py.File(file,'r')
 	dsName=dataset
 	data=f[dsName+datain]
+	#remove noise - neglect peak heights with <20 mV
+	if integral==0:
+		data=[y for y in data if y > 0.02]
 	#linear fit
-	#data=[(coef[0]*x+coef[1]) for x in data]
+	data=[(coef[0]*x+coef[1]) for x in data]
 	#quadratic fit
 	#data=[(coef[0]*x*x+coef[1]*x+coef[2]) for x in data]
 	#3rd deg poly fit
@@ -231,7 +234,7 @@ def enResPlot_scale(settings, coef, fitLow=0, fitHigh=np.inf, dataset='run1', in
 	#sqrt fit
 	#data=[(coef[0]*np.sqrt(x)+coef[1]) for x in data]
 	#spline
-	data=interpolate.splev(data, coef)
+	#data=interpolate.splev(data, coef)
 	
 	#Create arrays for binning based on scope resolution
 	xBinWidth=0.5 #1.0keV bins
@@ -491,9 +494,7 @@ def calcError(sigmaArr, nArr):
 	errArr=[]
 	#error Arr1ay = sigma/sqrt(N) (for edge, 2sig integral from mu)
 	for j in range(len(sigmaArr)):
-		err_p, err_i = 0,0
-		err_p == -1 if nArr[j][0]<=0 else err_p==sigmaArr[j][0]/np.sqrt(nArr[j][0])
-		err_i == -1 if nArr[j][1]<=0 else err_i==sigmaArr[j][1]/np.sqrt(nArr[j][1])
+		err_p = -1 if nArr[j][0]<=0 else sigmaArr[j][0]/np.sqrt(nArr[j][0])
+		err_i = -1 if nArr[j][1]<=0 else sigmaArr[j][1]/np.sqrt(nArr[j][1])
 		errArr.append([err_p,err_i])
-		
 	return errArr
