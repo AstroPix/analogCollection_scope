@@ -11,7 +11,13 @@ import enResFitting
 
 savePlots=False
 fitSpectra=False #False if spectra have already been fit
-pix=2 #1 or 2 - which amp to consider
+pix=1 #1 or 2 - which amp to consider
+#fits: [0] linear, [1] quadratic, [2] 3rd deg poly, [3] sqrt, [4] 1deg spline, [5] 3deg spline
+fit=5
+
+########################################################################################
+###########################################################################
+##############################################################
 
 #Fit functions for curve_fit
 def linFit(x,m,b):
@@ -50,11 +56,9 @@ def odr_polyfit(fitdata, deg):
 		printf("Not possible - choose degree 1, 2, or 3")
 		#AMANDA - better break
 	
-	
 	odrfit = ODR(fitdata,mod,[1e-8 for x in range(deg+1)])		
 	out=odrfit.run()
 	coef=out.beta
-	
 	return coef
 
 def getFiles(amp):
@@ -127,31 +131,39 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	amp_i_sorted = [x for _, x in sorted(zip(trueEn, amp_i), key=lambda pair: pair[0])]
 	err_i_sorted = [x for _, x in sorted(zip(trueEn, err_i), key=lambda pair: pair[0])]
 
-
-	#Fit different functions to data
-	coef, coef_pcov = curve_fit(linFit,trueEn,amp_p,sigma=err_p,absolute_sigma=True) #linear 
-	coef2, coef2_pcov = curve_fit(quadFit,trueEn,amp_p,sigma=err_p,absolute_sigma=True) #quadratic
-	coef3, coef3_pcov = curve_fit(triFit,trueEn,amp_p,sigma=err_p,absolute_sigma=True) #3rd deg poly
-	popt, pcov = curve_fit(sqrtFit, trueEn, amp_p, sigma=err_p,absolute_sigma=True) #square root
-	tck = interpolate.splrep(trueEn_sorted, amp_p_sorted) #cubic spline
-	tck1 = interpolate.splrep(trueEn_sorted, amp_p_sorted,k=1) #linear spline
-
 	
 	#Plot data and fit functions
 	x = np.linspace(np.min(trueEn), np.max(trueEn), 100)
 	plt.errorbar(trueEn, amp_p, yerr=err_p, fmt='o', label="data")
-	linPlot=linFit(x,*coef)
-	#plt.plot(x, linPlot, '--k',label=f"Linear fit")
-	quadPlot=quadFit(x,*coef2)
-	#plt.plot(x, quadPlot, '--r',label=f"y={coef2[0]:.5f}x$^2$+{coef2[1]:.3f}x+{coef2[2]:.3f}")
-	triPlot=triFit(x,*coef3)
-	#plt.plot(x, triPlot, '--b',label=f"3rd deg. polynomial")
-	sqrt_fn = sqrtFit(x, *popt)
-	#plt.plot(x,sqrt_fn,'--g',label=f"y={popt[0]:.3f}*sqrt(x)+{popt[1]:.3f}")
-	splinePlot = interpolate.splev(x, tck)
-	plt.plot(x, splinePlot, '--g', label="Cubic Spline")
-	spline1Plot = interpolate.splev(x, tck)
-	#plt.plot(x, spline1Plot, '--g', label="linear spline")
+	
+	if fit==0:
+		coef, coef_pcov = curve_fit(linFit,trueEn,amp_p,sigma=err_p,absolute_sigma=True) #linear 
+		linPlot=linFit(x,*coef)
+		plt.plot(x, linPlot, '--k',label=f"Linear fit")
+		print(f"Peak linear fit: y={coef[0]:.3f}x+{coef[1]:.3f}")
+	elif fit==1:
+		coef2, coef2_pcov = curve_fit(quadFit,trueEn,amp_p,sigma=err_p,absolute_sigma=True) #quadratic
+		quadPlot=quadFit(x,*coef2)
+		plt.plot(x, quadPlot, '--r',label=f"y={coef2[0]:.5f}x$^2$+{coef2[1]:.3f}x+{coef2[2]:.3f}")
+		print(f"Peak quadratic fit: y={coef2[0]:.5f}x$^2$+{coef2[1]:.3f}x+{coef2[2]:.3f}")
+	elif fit==2:
+		coef3, coef3_pcov = curve_fit(triFit,trueEn,amp_p,sigma=err_p,absolute_sigma=True) #3rd deg poly
+		triPlot=triFit(x,*coef3)
+		plt.plot(x, triPlot, '--b',label=f"3rd deg. polynomial")
+		print(f"Peak 3rd deg poly fit: y={coef3[0]:.3f}x$^3$+{coef3[1]:.3f}x$^2$+{coef3[2]:.3f}x + {coef3[3]:.3f}")
+	elif fit==3:
+		popt, pcov = curve_fit(sqrtFit, trueEn, amp_p, sigma=err_p,absolute_sigma=True) #square root
+		sqrt_fn = sqrtFit(x, *popt)
+		plt.plot(x,sqrt_fn,'--g',label=f"y={popt[0]:.3f}*sqrt(x)+{popt[1]:.3f}")
+		print(f"y={popt[0]:.3f}*sqrt(x)+{popt[1]:.3f}")
+	elif fit==4:
+		tck1 = interpolate.splrep(trueEn_sorted, amp_p_sorted,k=1) #linear spline
+		spline1Plot = interpolate.splev(x, tck)
+		plt.plot(x, spline1Plot, '--g', label="linear spline")
+	elif fit==5:	
+		tck = interpolate.splrep(trueEn_sorted, amp_p_sorted) #cubic spline
+		splinePlot = interpolate.splev(x, tck)
+		plt.plot(x, splinePlot, '--g', label="Cubic Spline")
 
 	plt.xlabel("True Energy [keV]")
 	plt.ylabel(f"{dataName} (from peak height)")	
@@ -160,41 +172,36 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	plt.grid()
 	plt.xlim([-10,1.1*np.max(trueEn)])
 	plt.ylim([-0.05,1.1*np.max(amp_p)])
-	#plt.yscale('log')
 	plt.savefig(f"{saveto}peaks_{dataNameStr}.pdf") if savePlots else plt.show()
 	plt.clf()
 	
-	#Print fit equations to terminal
-	print(f"Peak linear fit: y={coef[0]:.3f}x+{coef[1]:.3f}")
-	print(f"Peak quadratic fit: y={coef2[0]:.5f}x$^2$+{coef2[1]:.3f}x+{coef2[2]:.3f}")
-	print(f"Peak 3rd deg poly fit: y={coef3[0]:.3f}x$^3$+{coef3[1]:.3f}x$^2$+{coef3[2]:.3f}x + {coef3[3]:.3f}")
-	print(f"y={popt[0]:.3f}*sqrt(x)+{popt[1]:.3f}")
-
+	
 	#fit opposite orientation so that scaling is easier
 	#need different regression technique for X-error bars
-	datain = RealData(amp_p, trueEn, sx=err_p)
-	coef_fit = odr_polyfit(datain,1)
-	coef2_fit = odr_polyfit(datain,2)
-	coef3_fit = odr_polyfit(datain,3)
-	sqrt_model = Model(sqrt_odr)
-	odr_sqrt = ODR(datain, sqrt_model,[1e-8,1e-8])
-	out_sqrt=odr_sqrt.run()
-	coef4_fit=out_sqrt.beta
-	#spline
-	splineFn = interpolate.splrep(amp_p_sorted, trueEn_sorted, w=err_p_sorted)
-	spline1Fn = interpolate.splrep(amp_p_sorted, trueEn_sorted, w=err_p_sorted, k=1)
-
+	if fit==0:
+		datain = RealData(amp_p, trueEn, sx=err_p)
+		coef_fit = odr_polyfit(datain,1)
+	elif fit==1:
+		datain = RealData(amp_p, trueEn, sx=err_p)
+		coef_fit = odr_polyfit(datain,2)
+	elif fit==2:
+		datain = RealData(amp_p, trueEn, sx=err_p)
+		coef_fit = odr_polyfit(datain,3)
+	elif fit==3:
+		sqrt_model = Model(sqrt_odr)
+		odr_sqrt = ODR(datain, sqrt_model,[1e-8,1e-8])
+		out_sqrt=odr_sqrt.run()
+		coef_fit=out_sqrt.beta
+	elif fit==4:
+		coef_fit = interpolate.splrep(amp_p_sorted, trueEn_sorted, w=err_p_sorted, k=1)
+	elif fit==5:
+		coef_fit = interpolate.splrep(amp_p_sorted, trueEn_sorted, w=err_p_sorted)
 	
-	#print(f"Peak 3rd deg poly fit, x [keV]: y={coef3[0]}x$^3$+{coef3[1]}x$^2$+{coef3[2]}x + {coef3[3]}")
-	#print(f"Peak 3rd deg poly fit, x [V]: y={coef3_fit[0]}x$^3$+{coef3_fit[1]}x$^2$+{coef3_fit[2]}x + {coef3_fit[3]}")
-
-		
 	
 	#AMANDA - goodness of fit value
-	#return ideal fit only - 3rd deg polynomial
-	
-	#return coef3_fit
-	return splineFn
+
+
+	return coef_fit
 	
 	
 	
@@ -204,7 +211,7 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 
 homeDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp/"
 saveDir = enResFitting.getSaveto()
-dataDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp2_peaks/fitSpectra"
+dataDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/fitSpectra"
 
 
 #files to be used for energy calibration curve
@@ -252,14 +259,14 @@ if fitSpectra:
 		i+=1
 		
 else: #if spectra have been fit before, pull out values from txt files
-	print("spectra are already fit")
-	
+	print("spectra are already fit")	
 	energyList, muArr1, sigmaArr1, nArr1, enResArr1 = enResFitting.getVals_fromTxt(dataDir)
 
 
 
 #calculate error
-errArr1= enResFitting.calcError(sigmaArr1, nArr1)
+errArr1 = enResFitting.calcError(sigmaArr1, nArr1)
+
 
 """
 #error Arr1ay = sigma/sqrt(N) (for edge, 2sig integral from mu)
@@ -276,21 +283,15 @@ coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]",saveDir)
 #use calibration curve to calibrate a spectrum
 file="110421_amp1/Americium_480min_combined.h5py"
 settings=[homeDir+file, "Americium241-calib", 1, 59.54, savePlots]
-popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p,fitLow=50)
+popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p,fit,fitLow=50)
 enResFitting.printParams(settings, -1, popt, enRes, pcov)
 	
 
 file="102021_amp1/cadmium109_45min.h5py"
 settings=[homeDir+file,  "Cadmium109-calib", 1, 22.16, savePlots]
-popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p)
+popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p,fit)
 enResFitting.printParams(settings, -1, popt, enRes, pcov)
 
-
-
-		
-#AMANDA
-#18 NOV
-#add 14 keV Co point before creating all fit plots
 		
 		
 		

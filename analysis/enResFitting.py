@@ -35,7 +35,7 @@ def getArrayIndex(array, low,high):
 	return low_i, high_i
 
 def getSaveto():
-	return "/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/linear/"
+	return "/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/spline1/"
 
 
 
@@ -203,7 +203,7 @@ def printParams(settings, integ, popt, en_res, pcov, integral=False):
 
 
 #Use linear fit coefficients to scale data to keV before plot/fit
-def enResPlot_scale(settings, coef, fitLow=0, fitHigh=np.inf, dataset='run1', integral=0):
+def enResPlot_scale(settings, coef, fit, fitLow=0, fitHigh=np.inf, dataset='run1', integral=0):
 	#Define inputs
 	file=settings[0]
 	title=settings[1]
@@ -225,16 +225,22 @@ def enResPlot_scale(settings, coef, fitLow=0, fitHigh=np.inf, dataset='run1', in
 	#remove noise - neglect peak heights with <20 mV
 	if integral==0:
 		data=[y for y in data if y > 0.02]
-	#linear fit
-	data=[(coef[0]*x+coef[1]) for x in data]
-	#quadratic fit
-	#data=[(coef[0]*x*x+coef[1]*x+coef[2]) for x in data]
-	#3rd deg poly fit
-	#data=[(coef[0]*x*x*x+coef[1]*x*x+coef[2]*x+coef[3]) for x in data]
-	#sqrt fit
-	#data=[(coef[0]*np.sqrt(x)+coef[1]) for x in data]
-	#spline
-	#data=interpolate.splev(data, coef)
+		
+	if fit==0:
+		#linear fit
+		data=[(coef[0]*x+coef[1]) for x in data]
+	elif fit==1:
+		#quadratic fit
+		data=[(coef[0]*x*x+coef[1]*x+coef[2]) for x in data]
+	elif fit==2:
+		#3rd deg poly fit
+		data=[(coef[0]*x*x*x+coef[1]*x*x+coef[2]*x+coef[3]) for x in data]
+	elif fit==3:
+		#sqrt fit
+		data=[(coef[0]*np.sqrt(x)+coef[1]) for x in data]
+	elif (fit==4 or fit==5):
+		#spline
+		data=interpolate.splev(data, coef)
 	
 	#Create arrays for binning based on scope resolution
 	xBinWidth=0.5 #1.0keV bins
