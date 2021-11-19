@@ -259,14 +259,15 @@ else: #if spectra have been fit before, pull out values from txt files
 
 
 #calculate error
-errArr1=[]
+errArr1= enResFitting.calcError(sigmaArr1, nArr1)
 
+"""
 #error Arr1ay = sigma/sqrt(N) (for edge, 2sig integral from mu)
 for j in range(len(sigmaArr1)):
 	err_p=sigmaArr1[j][0]/np.sqrt(nArr1[j][0])
 	err_i=sigmaArr1[j][1]/np.sqrt(nArr1[j][1])
 	errArr1.append([err_p,err_i])
-
+"""
 
 #use fit mean of measured peaks and associated error to create calibration curve
 coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]",saveDir)

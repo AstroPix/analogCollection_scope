@@ -448,3 +448,14 @@ def getVals_fromTxt(inDir):
 		enResArr1[energyIndex].append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
 
 	return energyList, muArr1, sigmaArr1, nArr1, enResArr1
+	
+	
+def calcError(sigmaArr, nArr):	
+	errArr=[]
+	#error Arr1ay = sigma/sqrt(N) (for edge, 2sig integral from mu)
+	for j in range(len(sigmaArr)):
+		err_p=sigmaArr[j][0]/np.sqrt(nArr[j][0])
+		err_i=sigmaArr[j][1]/np.sqrt(nArr[j][1])
+		errArr.append([err_p,err_i])
+		
+	return errArr
