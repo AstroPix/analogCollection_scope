@@ -11,7 +11,7 @@ import enResFitting
 
 savePlots=True
 fitSpectra=False #False if spectra have already been fit
-pix=1 #1 or 2 - which amp to consider
+pix=2 #1 or 2 - which amp to consider
 
 #Fit functions for curve_fit
 def linFit(x,m,b):
@@ -71,12 +71,12 @@ def getFiles(amp):
 		energyList=[14.41, 122.06, 59.54, 22.16]
 		nameList=["Cobalt57","Cobalt57", "Americium241", "Cadmium109"]
 		#fine-tune the range so that individual peaks are picked out
-		fitLow_p=[0.03,0.29,0.09,0.05]
-		fitLow_i=[0,1700,300,100,150]
+		fitLow_p=[0.03,0.3,0.19,0.06]
+		fitLow_i=[0,900,200,0]
 		return fileList,energyList,nameList, fitLow_p, fitLow_i
 	else:
 		print("Choose amp1 or amp2")
-		return 0
+		 
 		
 def getEdgeFiles(amp):
 	if amp==1:
@@ -89,11 +89,16 @@ def getEdgeFiles(amp):
 		fitHigh_i=[1000]
 		return fileList,energyList,nameList, fitLow_p, fitLow_i, fitHigh_p, fitHigh_i
 	elif amp==2:
-		print("No files")
-		return 0
+		fileList=["111221_amp2/weekend_Cobalt57_4020min.h5py"]
+		energyList=[39.46]
+		nameList=["Cobalt57"]
+		fitLow_p=[0.15]
+		fitHigh_p=[0.19]
+		fitLow_i=[100]
+		fitHigh_i=[200]
+		return fileList,energyList,nameList, fitLow_p, fitLow_i, fitHigh_p, fitHigh_i
 	else:
 		print("Choose amp1 or amp2")
-		return 0
 	
 def energyCalibFit(trueEn, data, err, dataName, saveto):
 	plt.clf()
@@ -144,9 +149,9 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	sqrt_fn = sqrtFit(x, *popt)
 	#plt.plot(x,sqrt_fn,'--g',label=f"y={popt[0]:.3f}*sqrt(x)+{popt[1]:.3f}")
 	splinePlot = interpolate.splev(x, tck)
-	#plt.plot(x, splinePlot, '--g', label="Cubic Spline")
+	plt.plot(x, splinePlot, '--g', label="Cubic Spline")
 	spline1Plot = interpolate.splev(x, tck)
-	plt.plot(x, spline1Plot, '--g', label="linear spline")
+	#plt.plot(x, spline1Plot, '--g', label="linear spline")
 
 	plt.xlabel("True Energy [keV]")
 	plt.ylabel(f"{dataName} (from peak height)")	
@@ -189,7 +194,7 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	#return ideal fit only - 3rd deg polynomial
 	
 	#return coef3_fit
-	return spline1Fn
+	return splineFn
 	
 	
 	
@@ -199,7 +204,7 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 
 homeDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp/"
 saveDir = enResFitting.getSaveto()
-dataDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/fitSpectra"
+dataDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp2_peaks/fitSpectra"
 
 
 #files to be used for energy calibration curve
@@ -208,14 +213,11 @@ enResArr1, muArr1, sigmaArr1, nArr1 = [],[],[], []
 
 #amp2
 enResArr2, muArr2, sigmaArr2, nArr2 = [],[],[], []
-#fileList,energyList,nameList = getFiles(2)
 
 
 if fitSpectra:
-	#amp1
 	fileList,energyList,nameList,fitLow_p,fitLow_i = getFiles(pix)
 
-	
 	#loop through all files, fit with Gaussian, return mean/sigma/energy resolution and store in arrays - separately for each amp
 	i=0
 	for file in fileList:
@@ -223,6 +225,7 @@ if fitSpectra:
 		popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fitLow=fitLow_p[i])
 		enResFitting.printParams(settings, integ, popt, enRes, pcov)
 		#integral argument = integral bin size (in V)
+		#AMANDA - N calculation is failing for integral
 		poptI, enResI, pcovI, integI = enResFitting.enResPlot(settings, fitLow=fitLow_i[i], integral=20)
 		enResFitting.printParams(settings, integI, poptI, enResI, pcovI, integral=True)
 		enResArr1.append([enRes,enResI])
@@ -234,7 +237,7 @@ if fitSpectra:
 	#loop through additional files, fit with integrated Gaussian (for Compton edge), return mean/sigma/energy resolution and store in arrays
 	edgeFileList,edgeEnergyList,edgeNameList,edgeFitLow_p,edgeFitLow_i,edgeFitHigh_p,edgeFitHigh_i = getEdgeFiles(pix)
 	energyList.extend(edgeEnergyList)
-	
+
 	i=0
 	for file in edgeFileList:
 		settings=[homeDir+file, edgeNameList[i], pix, edgeEnergyList[i],savePlots]
@@ -274,16 +277,6 @@ else: #if spectra have been fit before, pull out values from txt files
 		nArr1[energyIndex].append(float(lines[3].split(' = ')[-1]))
 		enResArr1[energyIndex].append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
 
-
-
-"""
-#to debug fitting - hardcode values
-energyList.append(39.46)
-muArr1=[[0.0705,190.149],[0.2597,742.7046],[0.3049,1812.8481],[0.2042,463.842],[0.116,153.671],[0.151,641.77]]
-sigmaArr1=[[0.012,53.393],[0.0054,28.206],[0.0076,56.683],[0.0061,41.639],[0.012,51.320],[0.0033,65.1507]]
-nArr1=[[6.335,166564.19],[0.678,2.164],[0.809,2.794],[0.428,21722.894],[1.312, 14189.19],[2.234,67744.383]]
-#AMANDA - N calculation is failing for integral
-"""
 
 
 #calculate error
