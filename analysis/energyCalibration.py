@@ -9,7 +9,7 @@ import sys,os,glob
 import enResFitting
 
 
-savePlots=True
+savePlots=False
 fitSpectra=False #False if spectra have already been fit
 pix=2 #1 or 2 - which amp to consider
 
@@ -253,29 +253,8 @@ if fitSpectra:
 		
 else: #if spectra have been fit before, pull out values from txt files
 	print("spectra are already fit")
-	energyList=[]
-
-	os.chdir(dataDir)
-	peakFiles = glob.glob('*peaks*.txt')
-	for filename in peakFiles:
-		energyList.append(float(filename.split('_')[1][:-4]))
-		openFile=open(filename,'r')
-		lines=openFile.readlines()
-		muArr1.append([float(lines[1].split(' = ')[-1])])
-		sigmaArr1.append([float(lines[2].split(' = ')[-1])])
-		nArr1.append([float(lines[3].split(' = ')[-1])])
-		enResArr1.append([float(lines[4].split(' = ')[-1][:-2])])#eliminate % sign at the end
-		
-	intFiles = glob.glob('*integral*.txt')
-	for filename in intFiles:
-		energy=float(filename.split('_')[1][:-4])
-		energyIndex=energyList.index(energy)
-		openFile=open(filename,'r')
-		lines=openFile.readlines()
-		muArr1[energyIndex].append(float(lines[1].split(' = ')[-1]))
-		sigmaArr1[energyIndex].append(float(lines[2].split(' = ')[-1]))
-		nArr1[energyIndex].append(float(lines[3].split(' = ')[-1]))
-		enResArr1[energyIndex].append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
+	
+	energyList, muArr1, sigmaArr1, nArr1, enResArr1 = enResFitting.getVals_fromTxt(dataDir)
 
 
 

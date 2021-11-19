@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py
+import os, glob
 import scipy
 from scipy.optimize import curve_fit
 from scipy import special, interpolate
@@ -34,7 +35,7 @@ def getArrayIndex(array, low,high):
 	return low_i, high_i
 
 def getSaveto():
-	return "/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/spline1/"
+	return "/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp2_peaks/spline3/"
 
 
 
@@ -418,3 +419,32 @@ def printParams_edge(settings, integ, popt, en_res, pcov, integral=False):
 		print("Energy resolution = %0.2f" %(abs(en_res))+"%\n")
 		print("Error in erfc amplitude = %0.3f \nError in erfc constant = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp1_err, Amp2_err, Mu_err, Sigma_err)+"\n")
 		print("Error in energy resolution = %0.5f"%(stdev_er)+"%\n")
+		
+		
+		
+def getVals_fromTxt(inDir):		
+	energyList, muArr1, sigmaArr1, nArr1, enResArr1 = [],[],[],[],[]
+
+	os.chdir(inDir)
+	peakFiles = glob.glob('*peaks*.txt')
+	for filename in peakFiles:
+		energyList.append(float(filename.split('_')[1][:-4]))
+		openFile=open(filename,'r')
+		lines=openFile.readlines()
+		muArr1.append([float(lines[1].split(' = ')[-1])])
+		sigmaArr1.append([float(lines[2].split(' = ')[-1])])
+		nArr1.append([float(lines[3].split(' = ')[-1])])
+		enResArr1.append([float(lines[4].split(' = ')[-1][:-2])])#eliminate % sign at the end
+		
+	intFiles = glob.glob('*integral*.txt')
+	for filename in intFiles:
+		energy=float(filename.split('_')[1][:-4])
+		energyIndex=energyList.index(energy)
+		openFile=open(filename,'r')
+		lines=openFile.readlines()
+		muArr1[energyIndex].append(float(lines[1].split(' = ')[-1]))
+		sigmaArr1[energyIndex].append(float(lines[2].split(' = ')[-1]))
+		nArr1[energyIndex].append(float(lines[3].split(' = ')[-1]))
+		enResArr1[energyIndex].append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
+
+	return energyList, muArr1, sigmaArr1, nArr1, enResArr1
