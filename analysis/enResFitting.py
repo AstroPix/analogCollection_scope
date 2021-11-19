@@ -168,7 +168,7 @@ def printParams(settings, integ, popt, en_res, pcov, integral=False):
 	savePlots=settings[4]
 	
 	#Distinguish between peaks and integral
-	if (integral):
+	if integral:
 		datain='_integral'
 	else: #peaks
 		datain='_peaks'
@@ -449,6 +449,43 @@ def getVals_fromTxt(inDir):
 
 	return energyList, muArr1, sigmaArr1, nArr1, enResArr1
 	
+def getCalibVals_fromTxt(inDir, ele):		
+	energyList, muArr1, sigmaArr1, nArr1, enResArr1 = [],[],[],[],[]
+	fits=['linear','quad','tri','sqrt','spline1','spline3']
+
+	for fit in fits:
+		os.chdir(inDir+fit+'/')
+		peakFile = glob.glob('*'+ele+'*peaks*.txt') #returns array with length 1
+		energyList.append(float(peakFile[0].split('_')[1][:-4]))
+		openFile = open(peakFile[0],'r')
+		lines=openFile.readlines()
+		muArr1.append(float(lines[1].split(' = ')[-1]))
+		sigmaArr1.append(float(lines[2].split(' = ')[-1]))
+		nArr1.append(float(lines[3].split(' = ')[-1]))
+		enResArr1.append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
+	
+		"""
+		#when integral-calibrated plots are made
+		muArr1.append([float(lines[1].split(' = ')[-1])])
+		sigmaArr1.append([float(lines[2].split(' = ')[-1])])
+		nArr1.append([float(lines[3].split(' = ')[-1])])
+		enResArr1.append([float(lines[4].split(' = ')[-1][:-2])])#eliminate % sign at the end
+	
+
+		intFile = glob.glob('*'+ele+'*integral*.txt') #returns array with length 1
+		print(intFile)
+		energyList.append(float(peakFile[0].split('_')[1][:-4]))
+		openFile = open(peakFile[0],'r')
+		print(openFile)
+		lines=openFile.readlines()
+		muArr1[energyIndex].append(float(lines[1].split(' = ')[-1]))
+		sigmaArr1[energyIndex].append(float(lines[2].split(' = ')[-1]))
+		nArr1[energyIndex].append(float(lines[3].split(' = ')[-1]))
+		enResArr1[energyIndex].append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
+		"""
+	
+	return energyList[0], muArr1, sigmaArr1, nArr1, enResArr1, fits
+		
 	
 def calcError(sigmaArr, nArr):	
 	errArr=[]
