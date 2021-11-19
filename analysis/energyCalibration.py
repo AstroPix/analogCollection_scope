@@ -277,13 +277,13 @@ coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]",saveDir)
 file="110421_amp1/Americium_480min_combined.h5py"
 settings=[homeDir+file, "Americium241-calib", 1, 59.54, savePlots]
 popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p,fitLow=50)
-enResFitting.printParams(settings, -1, popt, enRes, pcov, savePlots)
+enResFitting.printParams(settings, -1, popt, enRes, pcov)
 	
 
 file="102021_amp1/cadmium109_45min.h5py"
 settings=[homeDir+file,  "Cadmium109-calib", 1, 22.16, savePlots]
 popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p)
-enResFitting.printParams(settings, -1, popt, enRes, pcov, savePlots)
+enResFitting.printParams(settings, -1, popt, enRes, pcov)
 
 
 
