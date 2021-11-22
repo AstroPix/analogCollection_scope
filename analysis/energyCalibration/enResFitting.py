@@ -280,50 +280,6 @@ def printParams(settings, integ, popt, en_res, pcov, integral=False, edge=False)
 			print("Error in amplitude = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp_err, Mu_err, Sigma_err))
 			print("Error in energy resolution = %0.5f"%(stdev_er))	
 		
-#Calculate error on fit parameters, save in text file	
-def printParams_edge(settings, integ, popt, en_res, pcov, integral=False):
-	#Define inputs
-	file=settings[0]
-	title=settings[1]
-	pixel=settings[2]
-	energy=settings[3]
-	savePlots=settings[4]
-
-	#Distinguish between peaks and integral
-	if (integral):
-		datain='_integral'
-	else: #peaks
-		datain='_peaks'
-	(Amp1, Amp2, Mu, Sigma) = popt
-	(Amp1_err, Amp2_err, Mu_err, Sigma_err) = np.sqrt(np.diag(pcov))
-	# Error propagation
-	partial_sigma = (2.355*100)/Mu
-	partial_mu = (2.355*100*Sigma)/(Mu**2)
-	stdev_er = np.sqrt(((partial_sigma**2)*(Sigma_err**2))+((partial_mu**2)*(Mu_err)**2))
-	
-	if savePlots:
-		saveto=f"{getSaveto()}{title}_{energy}edge{datain}EnRes.txt"
-		k=open(saveto, "w")
-		k.write("Amplitude erfc= %d Amplitude const = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp1, Amp2, Mu, Sigma)+"\n")
-		k.write("Events under fit (N) = %0.3f" %(integ)+"\n")
-		k.write("Energy resolution = %0.2f" %(abs(en_res))+"%\n")
-		k.write("Error in erfc amplitude = %0.3f \nError in erfc constant = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp1_err, Amp2_err, Mu_err, Sigma_err)+"\n")
-		k.write("Error in energy resolution = %0.5f"%(stdev_er)+"%\n")
-		k.close()
-		#Display contents to terminal
-		print(f"FIT FROM {title}_{energy}edge_{datain}")
-		m = open(saveto, "r")
-		text = m.read()
-		print(text)
-		m.close()
-	else:
-		print("Amplitude erfc= %d Amplitude const = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp1, Amp2, Mu, Sigma)+"\n")
-		print("Events under fit (N) = %0.3f" %(integ)+"\n")
-		print("Energy resolution = %0.2f" %(abs(en_res))+"%\n")
-		print("Error in erfc amplitude = %0.3f \nError in erfc constant = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp1_err, Amp2_err, Mu_err, Sigma_err)+"\n")
-		print("Error in energy resolution = %0.5f"%(stdev_er)+"%\n")
-		
-		
 		
 def getVals_fromTxt(inDir):		
 	energyList, muArr1, sigmaArr1, nArr1, enResArr1 = [],[],[],[],[]
