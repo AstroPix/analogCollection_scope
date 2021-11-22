@@ -271,7 +271,7 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 		k.write("chi2/ndf = %0.3f/%d = %0.3f" %(sum_square,int(sum_square/res_var)+1,res_var) +"/n")
 		k.write(fn)
 		k.write("Coefficients: \n")
-		k.write(coef_fit)
+		k.write(str(coef_fit))
 		k.close()
 		#Display contents to terminal
 		m = open(saveto, "r")
