@@ -4,14 +4,14 @@ import h5py
 import scipy
 from scipy.optimize import curve_fit
 import sys,os
-import enResFitting
+import energyCalibration/enResFitting
 
 
 savePlots=True
 
 
 
-def injScanPlot(inj, data, dataName,saveto):
+def injScanPlot(inj, data, dataName, saveto, fit=False):
 	
 	dataNameStr=dataName.replace(" ", "")
 	
@@ -27,36 +27,29 @@ def injScanPlot(inj, data, dataName,saveto):
 		amp1_i.append(flatData[2])
 		amp2_i.append(flatData[3])
 
-	x = np.linspace(np.min(inj), np.max(inj), 180)
-	
-	coef1p = np.polyfit(inj,amp1_p,2)
-	poly1d_fn1p = np.poly1d(coef1p) 
-	coef2p = np.polyfit(inj,amp2_p,2)
-	poly1d_fn2p = np.poly1d(coef2p) 
-	plt.scatter(inj,amp1_p,label='Amp1',marker="o")
-	plt.scatter(inj,amp2_p,label='Amp2',marker="o")
-	plt.plot(x, poly1d_fn1p(x), '--k',label=f"y={coef1p[0]:.3f}x$^2$+{coef1p[1]:.3f}x+{coef1p[2]:.3f}")
-	plt.plot(x, poly1d_fn2p(x), '--k',label=f"y={coef2p[0]:.3f}x$^2$+{coef2p[1]:.3f}x+{coef2p[2]:.3f}")
+	plt.scatter(inj,amp1_p,label='Amp1',marker="o",linestyle='None')
+	plt.scatter(inj,amp2_p,label='Amp2',marker="o",linestyle='None')
 	plt.xlabel("Injection voltage [V]")
 	plt.ylabel(f"{dataName} (from peak height)")
 	plt.legend(loc="best")
-	plt.yscale('log')
-	plt.savefig(f"{saveto}_peaks_{dataNameStr}_log.pdf") if savePlots else plt.show()
+	plt.savefig(f"{saveto}_peaks_{dataNameStr}.pdf") if savePlots else plt.show()
 	plt.clf()
 
-	coef1i = np.polyfit(inj,amp1_p,2)
-	poly1d_fn1i = np.poly1d(coef1i) 
-	coef2i = np.polyfit(inj,amp2_p,2)
-	poly1d_fn2i = np.poly1d(coef2i) 	
-	plt.plot(inj,amp1_i,label='Amp1',marker="o")
-	plt.plot(inj,amp2_i,label='Amp2',marker="o")
-	plt.plot(x, poly1d_fn1i(x), '--k',label=f"y={coef1i[0]:.3f}x$^2$+{coef1i[1]:.3f}x+{coef1i[2]:.3f}")
-	plt.plot(x, poly1d_fn2i(x), '--k',label=f"y={coef2i[0]:.3f}x$^2$+{coef2i[1]:.3f}x+{coef2i[2]:.3f}")
+	if fit:
+		x = np.linspace(inj[1],inj[-3], 180)
+		coef1i = np.polyfit(inj[1:-3],amp1_i[1:-3],1)
+		poly1d_fn1i = np.poly1d(coef1i) 
+		coef2i = np.polyfit(inj[1:-3],amp2_i[1:-3],1)
+		poly1d_fn2i = np.poly1d(coef2i) 
+		plt.plot(x, poly1d_fn1i(x), '--b',label=f"y={coef1i[0]:.3f}x+{coef1i[1]:.3f}")
+		plt.plot(x, poly1d_fn2i(x), '--',color='orange',label=f"y={coef2i[0]:.3f}x+{coef2i[1]:.3f}")
+
+	plt.plot(inj,amp1_i,label='Amp1',marker="o",linestyle='None')
+	plt.plot(inj,amp2_i,label='Amp2',marker="o",linestyle='None')
 	plt.xlabel("Injection voltage [V]")
 	plt.ylabel(f"{dataName} (from integral)")
 	plt.legend(loc="best")
-	plt.yscale('log')
-	plt.savefig(f"{saveto}_integral_{dataNameStr}_log.pdf") if savePlots else plt.show()
+	plt.savefig(f"{saveto}_integral_{dataNameStr}.pdf") if savePlots else plt.show()
 	plt.clf()
 	
 	
@@ -84,7 +77,7 @@ for inj in injection:
 		
 		
 injScanPlot(injection, enResArr, "Energy Resolution [\%]", homeDir+"/102221")	
-injScanPlot(injection, muArr, "Fit Mean [V]",homeDir+"/102221")		
+injScanPlot(injection, muArr, "Fit Mean [V]",homeDir+"/102221", fit=True)		
 		
 		
 		

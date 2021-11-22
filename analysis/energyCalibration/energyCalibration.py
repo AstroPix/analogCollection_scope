@@ -87,48 +87,72 @@ def getSumSq(trueEn, voltage, err, coef):
 	print(f"final sum_square {sum_square}")
 	return sum_square
 
+def fixFileList(fileList):
+	#complete path if not already done in input file, eliminate empty elements
+	todel=[]
+	for i, inp in enumerate(fileList):
+		if inp=='\n':
+			todel.append(i)
+		elif homeDir not in inp:
+			fileList[i]=homeDir+inp	
+		fileList[i]=fileList[i][:-1]#remove new line characters
+	for i in sorted(todel, reverse=True):
+		del fileList[i]	
+	return fileList
+
 def getFiles(amp):
+	os.chdir(sys.path[0])
 	if amp==1:
-		fileList=["102021_amp1/cobalt57_14h.h5py","102021_amp1/cadmium109_45min.h5py", "102821_amp1/cadmium109_16h.h5py", "102021_amp1/cobalt57_14h.h5py","110421_amp1/Americium_480min_combined.h5py","110821_amp1/barium133_combined_65min.h5py"]
-		energyList=[14.41, 22.16, 88.03, 122.06, 59.54, 30.97]
-		nameList=["Cobalt57", "Cadmium109", "Cadmium109", "Cobalt57", "Americium241", "Barium133"]
+		with open(input1, 'r') as files1:
+			fileList=files1.readlines()
+		energyList=[22.16, 88.03, 14.41, 122.06, 59.54, 30.97]
+		nameList=["Cadmium109", "Cadmium109", "Cobalt57", "Cobalt57", "Americium241", "Barium133"]
 		#fine-tune the range so that individual peaks are picked out
-		fitLow_p=[0.02, 0.05,0.25,0.29,0.17,0.09]
-		fitLow_i=[0,150,725,1700,300,200,100]
-		return fileList,energyList,nameList, fitLow_p, fitLow_i
+		fitLow_p=[0.05,0.25,0.02,0.29,0.17,0.09]
+		fitLow_i=[150,725,0,1700,300,200,100]
 	elif amp==2:
-		fileList=["111221_amp2/weekend_Cobalt57_4020min.h5py","111221_amp2/weekend_Cobalt57_4020min.h5py","111521_amp2/overnight_Americium241_960min.h5py", "111621_amp2/day_Cadmium109_300min.h5py"]
+		with open(input2, 'r') as files2:
+			fileList=files2.readlines()
 		energyList=[14.41, 122.06, 59.54, 22.16]
 		nameList=["Cobalt57","Cobalt57", "Americium241", "Cadmium109"]
 		#fine-tune the range so that individual peaks are picked out
 		fitLow_p=[0.03,0.3,0.19,0.06]
 		fitLow_i=[0,900,200,0]
-		return fileList,energyList,nameList, fitLow_p, fitLow_i
 	else:
 		print("Choose amp1 or amp2")
-		 
+		fileList,energyList,nameList,fitLow_p,fitLow_i = [],[],[],[],[]
+
+	fileList=fixFileList(fileList)
+	return fileList, energyList, nameList, fitLow_p, fitLow_i
+
 		
 def getEdgeFiles(amp):
+	os.chdir(sys.path[0])
 	if amp==1:
-		fileList=["102021_amp1/cobalt57_14h.h5py"]
+		with open(input1_edge, 'r') as files1:
+			fileList=files1.readlines()
 		energyList=[39.46]
 		nameList=["Cobalt57"]
 		fitLow_p=[0.13]
 		fitHigh_p=[0.17]
 		fitLow_i=[0]
 		fitHigh_i=[1000]
-		return fileList,energyList,nameList, fitLow_p, fitLow_i, fitHigh_p, fitHigh_i
 	elif amp==2:
-		fileList=["111221_amp2/weekend_Cobalt57_4020min.h5py"]
+		with open(input2_edge, 'r') as files2:
+			fileList=files2.readlines()
 		energyList=[39.46]
 		nameList=["Cobalt57"]
 		fitLow_p=[0.15]
 		fitHigh_p=[0.19]
 		fitLow_i=[100]
 		fitHigh_i=[200]
-		return fileList,energyList,nameList, fitLow_p, fitLow_i, fitHigh_p, fitHigh_i
 	else:
 		print("Choose amp1 or amp2")
+		fileList,energyList,nameList,fitLow_p,fitLow_i, fithith_p, fitHigh_i = [],[],[],[],[],[],[]
+	
+	fileList=fixFileList(fileList)
+	return fileList, energyList, nameList, fitLow_p, fitLow_i, fitHigh_p, fitHigh_i
+
 	
 def energyCalibFit(trueEn, data, err, dataName, saveto):
 	plt.clf()
@@ -283,7 +307,7 @@ if fitSpectra:
 	#loop through all files, fit with Gaussian, return mean/sigma/energy resolution and store in arrays - separately for each amp
 	i=0
 	for file in fileList:
-		settings=[homeDir+file, nameList[i], pix, energyList[i], savePlots]
+		settings=[file, nameList[i], pix, energyList[i], savePlots]
 		popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fitLow=fitLow_p[i])
 		enResFitting.printParams(settings, integ, popt, enRes, pcov)
 		#integral argument = integral bin size (in V)
@@ -339,6 +363,7 @@ coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]",saveDir)
 file="110421_amp1/Americium_480min_combined.h5py"
 settings=[homeDir+file, "Americium241-calib", 1, 59.54, savePlots]
 popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p,fit,fitLow=50)
+#popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p,fit,fitLow=50)
 enResFitting.printParams(settings, -1, popt, enRes, pcov)
 	
 
