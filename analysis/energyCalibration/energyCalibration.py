@@ -326,10 +326,10 @@ if fitSpectra:
 
 	i=0
 	for file in edgeFileList:
-		settings=[homeDir+file, edgeNameList[i], pix, edgeEnergyList[i],savePlots]
-		popt, enRes, pcov, integ= enResFitting.enResPlot_edge(settings,fitLow=edgeFitLow_p[i], fitHigh=edgeFitHigh_p[i])
+		settings=[file, edgeNameList[i], pix, edgeEnergyList[i],savePlots]
+		popt, enRes, pcov, integ= enResFitting.enResPlot(settings,edge=True,fitLow=edgeFitLow_p[i], fitHigh=edgeFitHigh_p[i])
 		enResFitting.printParams_edge(settings, integ, popt, enRes, pcov)
-		poptI, enResI, pcovI, integI = enResFitting.enResPlot_edge(settings,fitLow=edgeFitLow_i[i], fitHigh=edgeFitHigh_i[i],integral=10000)
+		poptI, enResI, pcovI, integI = enResFitting.enResPlot(settings,edge=True,fitLow=edgeFitLow_i[i], fitHigh=edgeFitHigh_i[i],integral=20)
 		enResFitting.printParams_edge(settings, integI, poptI, enResI, pcovI, integral=True)
 		enResArr1.append([enRes,enResI])
 		muArr1.append([popt[2],poptI[2]])
@@ -362,14 +362,14 @@ coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]",saveDir)
 #use calibration curve to calibrate a spectrum
 file="110421_amp1/Americium_480min_combined.h5py"
 settings=[homeDir+file, "Americium241-calib", 1, 59.54, savePlots]
-popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p,fit,fitLow=50)
+popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=50)
 #popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p,fit,fitLow=50)
 enResFitting.printParams(settings, -1, popt, enRes, pcov)
 	
 
 file="102021_amp1/cadmium109_45min.h5py"
 settings=[homeDir+file,  "Cadmium109-calib", 1, 22.16, savePlots]
-popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p,fit)
+popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit)
 enResFitting.printParams(settings, -1, popt, enRes, pcov)
 
 		
