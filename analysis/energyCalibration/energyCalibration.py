@@ -265,11 +265,11 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	
 	#print/save params
 	if savePlots:
-		saveto=f"{saveto}_fit{fit}params.txt"
+		saveto=f"{saveto}fit{fit}_params.txt"
 		k=open(saveto, "w")
-		k.write("ODR fit (x=measured energy [V], y=true energy [keV])")
-		k.write("chi2/ndf = %0.3f/%d = %0.3f" %(sum_square,int(sum_square/res_var)+1,res_var) +"/n")
-		k.write(fn)
+		k.write("ODR fit (x=measured energy [V], y=true energy [keV])\n")
+		k.write("chi2/ndf = %0.3f/%d = %0.3f" %(sum_square,int(sum_square/res_var)+1,res_var) +"\n")
+		k.write(fn+"\n")
 		k.write("Coefficients: \n")
 		k.write(str(coef_fit))
 		k.close()
@@ -356,7 +356,7 @@ for j in range(len(sigmaArr1)):
 """
 
 #use fit mean of measured peaks and associated error to create calibration curve
-coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]",saveDir)
+coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]", saveDir)
 
 
 #use calibration curve to calibrate a spectrum
