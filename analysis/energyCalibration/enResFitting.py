@@ -200,7 +200,7 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 		plt.title(f"Calibrated {title}, pixel {pixel}")
 	
 	#save figure
-	if fit:
+	if fit>-1:
 		saveto=f"{getSaveto()}{title}{datain}_{energy}line_calibrated.pdf"
 	elif edge:	
 		saveto=f"{getSaveto()}{title}{datain}EdgeFit_{energy}edge.pdf"
