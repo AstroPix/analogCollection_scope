@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.linalg import lstsq
 import h5py
 import scipy
+from scipy import stats, interpolate, optimize
 from scipy.optimize import curve_fit
-from scipy import stats, interpolate
 from scipy.odr import ODR, Model, Data, RealData
+from scipy.interpolate import UnivariateSpline
 import sys,os,glob
 import enResFitting
 
@@ -41,7 +43,8 @@ def triFit(x,a,b,c,d):
 def sqrtFit(x,A,B,mu):
 	#return A*np.sqrt(x-mu)+B
 	return A*np.sqrt(x)+B
-	
+def piecewise_linear(x, x0, y0, k1, k2):
+	return np.piecewise(x, [x < x0, x>=x0], [lambda x:k1*x + y0-k1*x0, lambda x:k2*x + y0-k2*x0])
 	
 #fit functions for ODR	
 def lin_odr(p,x):
@@ -74,13 +77,25 @@ def odr_polyfit(fitdata, deg):
 	res_var=out.res_var
 	sum_square=out.sum_square
 	return coef, res_var, sum_square
-
+	
 def getSumSq(trueEn, voltage, err, coef):
 	sum_square=0
 	for i in range(len(trueEn)):
 		fitVal=interpolate.splev(voltage[i], coef)
 		num = (trueEn[i]-fitVal)**2
 		fitErr=interpolate.splev(err[i],coef)
+		denom = fitErr**2
+		sum_square += (num/denom)
+		i+=1
+	print(f"final sum_square {sum_square}")
+	return sum_square
+	
+def getSumSq_lin(trueEn, voltage, err, coef):
+	sum_square=0
+	for i in range(len(trueEn)):
+		fitVal=piecewise_linear(voltage[i],*coef)	
+		num = (trueEn[i]-fitVal)**2
+		fitErr=piecewise_linear(err[i],*coef)	
 		denom = fitErr**2
 		sum_square += (num/denom)
 		i+=1
@@ -214,6 +229,14 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 		tck = interpolate.splrep(trueEn_sorted, amp_p_sorted) #cubic spline
 		splinePlot = interpolate.splev(x, tck)
 		plt.plot(x, splinePlot, '--g', label="Cubic Spline")
+	elif fit==6: 
+		#piecewise linear, floating breakpoint
+		coef, coef_pcov = curve_fit(piecewise_linear, trueEn, amp_p,sigma=err_p,absolute_sigma=True,p0=[50,0.17,0,0])
+		piecew=piecewise_linear(x,*coef)
+		print(coef)
+		#[p0,p1] = breakpoint, [p2,p3] = slopes
+		plt.plot(x, piecew, label="Piecewise linear")
+
 
 	plt.xlabel("True Energy [keV]")
 	plt.ylabel(f"{dataName} (from peak height)")	
@@ -253,7 +276,6 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 		coef_fit = interpolate.splrep(amp_p_sorted, trueEn_sorted, w=err_p_sorted, k=1)
 		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, coef_fit)
 		ndof = float(len(trueEn)-3-1)#loose 3 dof for continuinty requirements - need extra 1 for poor counting!?
-		print(f"len(trueEn) {len(trueEn)}")
 		res_var = sum_square/ndof
 		fn="spline, k=1"
 	elif fit==5:
@@ -262,7 +284,15 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 		ndof = float(len(trueEn)-3-1)#loose 3 dof for continuinty requirements - need extra 1 for poor counting!?
 		res_var = sum_square/float(ndof)
 		fn="spline,k=3"
-	
+	elif fit==6:
+		#piecewise linear, floating breakpoint
+		#not fit with x error bars
+		coef_fit, coef_pcov = curve_fit(piecewise_linear, amp_p, trueEn ,p0=[50,0.17,0,0])
+		sum_square=getSumSq_lin(trueEn_sorted, amp_p_sorted, err_p_sorted, coef_fit)
+		ndof = 11 #5 for linear fit, so 2 lin fits + break point
+		res_var = sum_square/ndof
+		fn = "piecewise linear, breakpoint ("+str(coef_fit[0])+","+str(coef_fit[1])+")"
+				
 	#print/save params
 	if savePlots:
 		saveto=f"{saveto}fit{fit}_params.txt"
@@ -347,14 +377,6 @@ else: #if spectra have been fit before, pull out values from txt files
 errArr1 = enResFitting.calcError(sigmaArr1, nArr1)
 
 
-"""
-#error Arr1ay = sigma/sqrt(N) (for edge, 2sig integral from mu)
-for j in range(len(sigmaArr1)):
-	err_p=sigmaArr1[j][0]/np.sqrt(nArr1[j][0])
-	err_i=sigmaArr1[j][1]/np.sqrt(nArr1[j][1])
-	errArr1.append([err_p,err_i])
-"""
-
 #use fit mean of measured peaks and associated error to create calibration curve
 coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]", saveDir)
 
@@ -363,17 +385,38 @@ coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]", saveDir)
 file="110421_amp1/Americium_480min_combined.h5py"
 settings=[homeDir+file, "Americium241-calib", 1, 59.54, savePlots]
 popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=50)
-#popt, enRes, pcov = enResFitting.enResPlot_scale(settings,coef_p,fit,fitLow=50)
 enResFitting.printParams(settings, -1, popt, enRes, pcov)
-	
+
 
 file="102021_amp1/cadmium109_45min.h5py"
 settings=[homeDir+file,  "Cadmium109-calib", 1, 22.16, savePlots]
 popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit)
 enResFitting.printParams(settings, -1, popt, enRes, pcov)
 
+"""
+file="102821_amp1/cadmium109_16h.h5py"
+settings=[homeDir+file,  "Cadmium109-calib", 1, 88.03, savePlots]
+popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=80)
+enResFitting.printParams(settings, -1, popt, enRes, pcov)		
+
+
+file="110821_amp1/barium133_combined_65min.h5py"
+settings=[homeDir+file,  "Barium133-calib", 1, 30.97, savePlots]
+popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit)
+enResFitting.printParams(settings, -1, popt, enRes, pcov)		
 		
-		
+
+file="102021_amp1/cobalt57_14h.h5py"
+settings=[homeDir+file,  "Cobalt57-calib", 1, 122.06, savePlots]
+popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=110)
+enResFitting.printParams(settings, -1, popt, enRes, pcov)		
+
+
+file="102021_amp1/cobalt57_14h.h5py"
+settings=[homeDir+file,  "Cobalt57_edge-calib", 1, 39.46, savePlots]
+popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,edge=True, fitLow=35, fitHigh=50)
+enResFitting.printParams(settings, -1, popt, enRes, pcov, edge=True)		
+"""		
 		
 		
 		

@@ -2,7 +2,7 @@
 
 #notable directories
 homeDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/
-saveDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/spline3/
+saveDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/piecewise/
 dataDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/fitSpectra/
 
 #input data files
@@ -16,7 +16,7 @@ input2_edge = amp2_edge_inputs.txt
 #Boolean run options
 # 0 is False, 1 is True
 #Saves plots in `saveDir` if True, displays plots if False
-savePlots = 0
+savePlots = 1
 #Fits all input spectra if true, reads fit parameter values from txt files in `dataDir` if False
 fitSpectra = 0
 
@@ -24,5 +24,5 @@ fitSpectra = 0
 #Which pixel / amp - Choose 1 or 2
 pix = 1 
 #Which fit function to use for calibration curve
-#fits: [0] linear, [1] quadratic, [2] 3rd deg poly, [3] sqrt, [4] 1deg spline, [5] 3deg spline
-fit = 5
+#fits: [0] linear, [1] quadratic, [2] 3rd deg poly, [3] sqrt, [4] 1deg spline, [5] 3deg spline, [6] piecewise linear
+fit = 6

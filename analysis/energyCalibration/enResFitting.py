@@ -110,6 +110,11 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 	elif (fit==4 or fit==5):
 		#spline
 		data=interpolate.splev(data, coef)
+	elif fit==6:
+		#piecewise
+		data1=[coef[2]*x for x in data if x<coef[0]]#low function
+		data2=[coef[3]*x for x in data if x>=coef[0]]#high function
+		data=data1+data2
 	
 	#Create arrays for binning based on scope resolution
 	scaling=f[dsName+'_scaling']
@@ -198,7 +203,7 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 	else:
 		plt.xlabel('Calibrated Energy [keV]')
 		plt.title(f"Calibrated {title}, pixel {pixel}")
-	
+
 	#save figure
 	if fit>-1:
 		saveto=f"{getSaveto()}{title}{datain}_{energy}line_calibrated.pdf"
