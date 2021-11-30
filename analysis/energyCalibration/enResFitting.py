@@ -3,10 +3,9 @@ import numpy as np
 import h5py
 import os, glob, sys
 import scipy
-from scipy.optimize import curve_fit
 from scipy import special, interpolate
+from scipy.optimize import curve_fit
 from scipy.integrate import quad
-
 
 
 #################
@@ -65,12 +64,77 @@ def getSaveto():
 	return saveDir
 
 
+def calc_chisquare(meas, sigma, fit):
+	diff = pow(meas-fit, 2.)
+	test_statistic = (diff / pow(sigma,2.)).sum()
+	return test_statistic
+	
+def closest(lst, K):
+	lst = np.asarray(lst)
+	idx = (np.abs(lst - K)).argmin()
+	return idx
+	
+def getGausRange(x,y,low,high,popt):
+	#y is array of bin content values
+	rang=2*popt[2]
+	print(f"mean: {popt[1]}, sigma: {popt[2]}, 3sig= {rang}")
+	bin_mean=closest(x,popt[1])
+	print(f"bin with mean: {bin_mean}")
+	bin_3sig=closest(x,popt[1]+rang)
+	bin_3sigN=closest(x,popt[1]-rang)
+	print(f"bin range: {bin_3sigN} - {bin_3sig}")
+	print(f"{x[bin_3sigN]} - {x[bin_3sig]}")
+	
+	return x[bin_3sigN:bin_3sig],y[bin_3sigN:bin_3sig]
+ 
+def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
+	#iterate on fit until max iterations or chi2/ndof<1 (fit within 1 sigma)
+	
+	print("in fit method")
+	
+	errors = np.ones(len(y)) #* 10
+	goodness_last=10000000000000000
+	popt_best=[0,0,0]
+	pcov_best=0
+
+	i=0
+	while i<maxIt:
+		print("Fit iteration "+str(i))	
+		print(f"Initial guess: {p01}")
+		print(f"Range: {low} to {high}")
+		if (high-low<10):
+			#too small a range to fit
+			break
+		else:
+			popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], p0=p01, bounds=(0,np.inf), maxfev=5000)
+			x1,y1=getGausRange(x,y,low,high,popt)
+			TS = calc_chisquare(y1, errors[:len(y1)], Gauss(x1,*popt))
+			NDF = len(y1) - len(popt)
+			goodness = TS/float(NDF)
+			print("chisquare/NDF = {0:.2f} / {1:d} = {2:.2f}".format(TS, NDF, TS / float(NDF)))
+		if goodness<goodness_last:
+			popt_best=popt
+			pcov_best=pcov
+			goodness_last=goodness
+			p01=popt
+			#tighten fit range
+			low+=2
+			high-=2
+			i+=1
+		else:
+			#fit getting worse
+			break
+	
+	print(f"returning {popt_best}")
+	return popt_best, pcov_best
+
+
 #Plot data, fit, calculate energy resolution and draw plot
 #Defaults for fitting a photopeak from a measured spectrum considering peak heights
 #Can fit pulse integral with optional integral input
 #Can fit Compton Edge with integrated Gaussian with optional edge input
 #Can calibrate measured signal to keV using calibration curve and fit calibrated spectrum with optional edge and fit inputs
-def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, dataset='run1', fit=-1, coef=0):
+def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, dataset='run1', fit=-1, coef=0, norm=False):
 	#Define inputs
 	file=settings[0]
 	title=settings[1]
@@ -161,7 +225,8 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 		#returns integral and uncertainty on calculation - only return integral value
 	else:
 		try:
-			popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000)
+			popt, pcov = iterativeFit(Gauss, p01, binCenters, ydata, low_i, high_i)
+			#popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000)
 			#range is set with low_i and high_i index values for input arrays
 			#bounds keeps all parameters positive
 		except RuntimeError: #fit could not converge
@@ -315,7 +380,7 @@ def getVals_fromTxt(inDir):
 	
 def getCalibVals_fromTxt(inDir, ele):		
 	energyList, muArr1, sigmaArr1, nArr1, enResArr1 = [],[],[],[],[]
-	fits=['linear','quad','tri','sqrt','spline1','spline3']
+	fits=['linear','quad','tri','sqrt','spline1','spline3','piecewise']
 
 	for fit in fits:
 		os.chdir(inDir+fit+'/')

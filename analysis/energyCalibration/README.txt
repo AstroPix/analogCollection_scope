@@ -15,5 +15,4 @@ RUNNING ENERGY CALIBRATION SCRIPT
 
 AMANDA
 - distinguish between gaussian and edge fit in code, not in inputs
-- clean up enResFitting
 - class to store info rather than arrays 
