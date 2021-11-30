@@ -87,7 +87,6 @@ def getSumSq(trueEn, voltage, err, coef):
 		denom = fitErr**2
 		sum_square += (num/denom)
 		i+=1
-	print(f"final sum_square {sum_square}")
 	return sum_square
 	
 def getSumSq_lin(trueEn, voltage, err, coef):
@@ -99,7 +98,6 @@ def getSumSq_lin(trueEn, voltage, err, coef):
 		denom = fitErr**2
 		sum_square += (num/denom)
 		i+=1
-	print(f"final sum_square {sum_square}")
 	return sum_square
 
 def fixFileList(fileList):
@@ -275,22 +273,24 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	elif fit==4:
 		coef_fit = interpolate.splrep(amp_p_sorted, trueEn_sorted, w=err_p_sorted, k=1)
 		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, coef_fit)
-		ndof = float(len(trueEn)-3-1)#loose 3 dof for continuinty requirements - need extra 1 for poor counting!?
+		ndof = float(len(trueEn)-3)#loose 3 dof for continuinty requirements
 		res_var = sum_square/ndof
 		fn="spline, k=1"
 	elif fit==5:
 		coef_fit = interpolate.splrep(amp_p_sorted, trueEn_sorted, w=err_p_sorted)
 		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, coef_fit)
-		ndof = float(len(trueEn)-3-1)#loose 3 dof for continuinty requirements - need extra 1 for poor counting!?
-		res_var = sum_square/float(ndof)
+		ndof = np.float64(len(trueEn)-3)#loose 3 dof for continuinty requirements
+		res_var = sum_square/ndof
+		print(f"{sum_square}/{ndof} = {res_var}")
+		print(f"{type(sum_square)}/{type(ndof)} = {type(res_var)}")
 		fn="spline,k=3"
 	elif fit==6:
 		#piecewise linear, floating breakpoint
 		#not fit with x error bars
 		coef_fit, coef_pcov = curve_fit(piecewise_linear, amp_p, trueEn ,p0=[50,0.17,0,0])
 		sum_square=getSumSq_lin(trueEn_sorted, amp_p_sorted, err_p_sorted, coef_fit)
-		ndof = 11 #5 for linear fit, so 2 lin fits + break point
-		res_var = sum_square/ndof
+		ndof = len(trueEn) - len(coef_fit)
+		res_var = sum_square/float(ndof)
 		fn = "piecewise linear, breakpoint ("+str(coef_fit[0])+","+str(coef_fit[1])+")"
 				
 	#print/save params
@@ -298,7 +298,7 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 		saveto=f"{saveto}fit{fit}_params.txt"
 		k=open(saveto, "w")
 		k.write("ODR fit (x=measured energy [V], y=true energy [keV])\n")
-		k.write("chi2/ndf = %0.3f/%d = %0.3f" %(sum_square,int(sum_square/res_var)+1,res_var) +"\n")
+		k.write("chi2/ndf = %0.3f/%d = %0.3f" %(sum_square,ndof,res_var) +"\n")
 		k.write(fn+"\n")
 		k.write("Coefficients: \n")
 		k.write(str(coef_fit))
@@ -382,44 +382,68 @@ coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]", saveDir)
 
 
 #use calibration curve to calibrate a spectrum
-file="110421_amp1/Americium_480min_combined.h5py"
-settings=[homeDir+file, "Americium241-calib", 1, 59.54, savePlots]
-popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=50)
-enResFitting.printParams(settings, -1, popt, enRes, pcov)
 
 
-file="102021_amp1/cadmium109_45min.h5py"
-settings=[homeDir+file,  "Cadmium109-calib", 1, 22.16, savePlots]
-popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit)
-enResFitting.printParams(settings, -1, popt, enRes, pcov)
+if pix==1:
+	file="110421_amp1/Americium_480min_combined.h5py"
+	settings=[homeDir+file, "Americium241-calib", 1, 59.54, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=50, norm=True)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 
-"""
-file="102821_amp1/cadmium109_16h.h5py"
-settings=[homeDir+file,  "Cadmium109-calib", 1, 88.03, savePlots]
-popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=80)
-enResFitting.printParams(settings, -1, popt, enRes, pcov)		
+	file="102021_amp1/cadmium109_45min.h5py"
+	settings=[homeDir+file,  "Cadmium109-calib", 1, 22.16, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=17)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 
 
-file="110821_amp1/barium133_combined_65min.h5py"
-settings=[homeDir+file,  "Barium133-calib", 1, 30.97, savePlots]
-popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit)
-enResFitting.printParams(settings, -1, popt, enRes, pcov)		
+	file="102821_amp1/cadmium109_16h.h5py"
+	settings=[homeDir+file,  "Cadmium109-calib", 1, 88.03, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=80)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov)		
+
+
+	file="110821_amp1/barium133_combined_65min.h5py"
+	settings=[homeDir+file,  "Barium133-calib", 1, 30.97, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=25)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov)		
 		
 
-file="102021_amp1/cobalt57_14h.h5py"
-settings=[homeDir+file,  "Cobalt57-calib", 1, 122.06, savePlots]
-popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=110)
-enResFitting.printParams(settings, -1, popt, enRes, pcov)		
+	file="102021_amp1/cobalt57_14h.h5py"
+	settings=[homeDir+file,  "Cobalt57-calib", 1, 122.06, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=110)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov)	
+	
+	file="102021_amp1/cobalt57_14h.h5py"
+	settings=[homeDir+file,  "Cobalt57-calib", 1, 14.41, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=10)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov)	
 
 
-file="102021_amp1/cobalt57_14h.h5py"
-settings=[homeDir+file,  "Cobalt57_edge-calib", 1, 39.46, savePlots]
-popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,edge=True, fitLow=35, fitHigh=50)
-enResFitting.printParams(settings, -1, popt, enRes, pcov, edge=True)		
-"""		
+	file="102021_amp1/cobalt57_14h.h5py"
+	settings=[homeDir+file,  "Cobalt57-edge-calib", 1, 39.46, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,edge=True, fitLow=35, fitHigh=50)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov, edge=True)
+			
+elif pix==2:
+	file="111521_amp2/overnight_Americium241_960min.h5py"
+	settings=[homeDir+file, "Americium241-calib", 2, 59.54, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=50)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov)
+	
+	file="111621_amp2/day_Cadmium109_300min.h5py"
+	settings=[homeDir+file,  "Cadmium109-calib", 2, 22.16, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=17)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov)
+	
+	file="111221_amp2/weekend_Cobalt57_4020min.h5py"
+	settings=[homeDir+file,  "Cobalt57-calib", 2, 122.06, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=110)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 		
-		
-		
+	file="111221_amp2/weekend_Cobalt57_4020min.h5py"
+	settings=[homeDir+file,  "Cobalt57-calib", 2, 14.41, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=10)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 		
 		
 		
