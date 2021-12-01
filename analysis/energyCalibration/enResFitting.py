@@ -74,41 +74,39 @@ def closest(lst, K):
 	idx = (np.abs(lst - K)).argmin()
 	return idx
 	
-def getGausRange(x,y,low,high,popt):
+def getGausRange(x,y,errs,popt):
 	#y is array of bin content values
-	rang=2*popt[2]
-	print(f"mean: {popt[1]}, sigma: {popt[2]}, 3sig= {rang}")
+	
+	rang=3*popt[2]
 	bin_mean=closest(x,popt[1])
-	print(f"bin with mean: {bin_mean}")
 	bin_3sig=closest(x,popt[1]+rang)
 	bin_3sigN=closest(x,popt[1]-rang)
-	print(f"bin range: {bin_3sigN} - {bin_3sig}")
-	print(f"{x[bin_3sigN]} - {x[bin_3sig]}")
 	
-	return x[bin_3sigN:bin_3sig],y[bin_3sigN:bin_3sig]
+	return x[bin_3sigN:bin_3sig],y[bin_3sigN:bin_3sig],errs[bin_3sigN:bin_3sig]
  
 def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 	#iterate on fit until max iterations or chi2/ndof<1 (fit within 1 sigma)
-	
-	print("in fit method")
-	
-	errors = np.ones(len(y)) #* 10
-	goodness_last=10000000000000000
+
+	errs=np.sqrt(y)
+	#avoid division by zero
+	for i,err in enumerate(errs):
+		if err==0:
+			errs[i]=1e-8
+	goodness_last=1e100
 	popt_best=[0,0,0]
 	pcov_best=0
 
 	i=0
 	while i<maxIt:
-		print("Fit iteration "+str(i))	
-		print(f"Initial guess: {p01}")
-		print(f"Range: {low} to {high}")
-		if (high-low<10):
+		print("Fit iteration "+str(i))
+		if (high-low<5):
 			#too small a range to fit
+			print("Too small a range to fit")
 			break
 		else:
-			popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], p0=p01, bounds=(0,np.inf), maxfev=5000)
-			x1,y1=getGausRange(x,y,low,high,popt)
-			TS = calc_chisquare(y1, errors[:len(y1)], Gauss(x1,*popt))
+			popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], sigma=errs[low:high], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
+			x1,y1,err1=getGausRange(x,y,errs,popt)
+			TS = calc_chisquare(y1, err1, Gauss(x1,*popt))
 			NDF = len(y1) - len(popt)
 			goodness = TS/float(NDF)
 			print("chisquare/NDF = {0:.2f} / {1:d} = {2:.2f}".format(TS, NDF, TS / float(NDF)))
@@ -125,7 +123,6 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 			#fit getting worse
 			break
 	
-	print(f"returning {popt_best}")
 	return popt_best, pcov_best
 
 
@@ -201,9 +198,11 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 	ydata=hist[0]
 	binCenters=hist[1]+xBinWidth/2
 	binCenters=binCenters[:-1]
-	
+
 	#Set fit range
 	low_i,high_i=getArrayIndex(binCenters,fitLow,fitHigh)
+	print(f"Inputs: low = {fitLow}, high = {fitHigh}")
+	print(f"Get indices {low_i} and {high_i}")
 	
 	#Set up fit with guesses for p01: [Amplitude, Mu, Sigma]
 	muGuess=np.mean(data)
@@ -212,13 +211,14 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 	ampGuess=ydata[low_i:high_i].max()
 	sigGuess=muGuess/2.
 	if edge:
-		p01 = [ampGuess, ampGuess, muGuess, muGuess/2.]
+		p01 = [ampGuess, ampGuess, muGuess, sigGuess]
 	else:
 		p01 = [ampGuess, muGuess, sigGuess]
+		print(p01)
 	
 	#Fit histogram over desired range
 	if edge:
-		popt, pcov = curve_fit(Edge, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000)
+		popt, pcov = curve_fit(Edge, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
 		(Amp1, Amp2, Mu, Sigma)=popt
 		#Calculate N (events within 2sigma of mean)
 		integ=scipy.integrate.quad(Edge, -2*Sigma, 2*Sigma, args=(Amp1,Amp2,Mu,Sigma))
@@ -226,13 +226,20 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 	else:
 		try:
 			popt, pcov = iterativeFit(Gauss, p01, binCenters, ydata, low_i, high_i)
-			#popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000)
+			"""
+			errs=np.sqrt(ydata[low_i:high_i])
+			#avoid division by zero
+			for i,err in enumerate(errs):
+				if err==0:
+					errs[i]=1e-8
+			popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=1/errs, p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
+			"""
 			#range is set with low_i and high_i index values for input arrays
 			#bounds keeps all parameters positive
 		except RuntimeError: #fit could not converge
 			sigGuess=sum(ydata*(binCenters-muGuess)**2)
 			p01 = [ampGuess, muGuess, sigGuess]
-			popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000)
+			popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
 		(Amp, Mu, Sigma)=popt
 		#Calculate N (events under fit)
 		integ=scipy.integrate.quad(Gauss, -np.inf, np.inf, args=(Amp,Mu,Sigma))
@@ -352,31 +359,44 @@ def printParams(settings, integ, popt, en_res, pcov, integral=False, edge=False)
 		
 		
 def getVals_fromTxt(inDir):		
-	energyList, muArr1, sigmaArr1, nArr1, enResArr1 = [],[],[],[],[]
+	energyList, muArr1, sigmaArr1, nArr1, enResArr1, muErrArr1 = [],[],[],[],[],[]
 
 	os.chdir(inDir)
 	peakFiles = glob.glob('*peaks*.txt')
 	for filename in peakFiles:
+		plus=0
 		energyList.append(float(filename.split('_')[1][:-4]))
+		if "edge" in filename:
+			plus=1
+			print(f"Edge file: {filename}")
+			print(f"Add {plus} to index")
 		openFile=open(filename,'r')
 		lines=openFile.readlines()
 		muArr1.append([float(lines[1].split(' = ')[-1])])
+		mu=lines[1].split(' = ')[-1]
+		print(f"Mu: {mu}")
 		sigmaArr1.append([float(lines[2].split(' = ')[-1])])
 		nArr1.append([float(lines[3].split(' = ')[-1])])
 		enResArr1.append([float(lines[4].split(' = ')[-1][:-2])])#eliminate % sign at the end
+		muErrArr1.append([float(lines[6+plus].split(' = ')[-1])])
 		
 	intFiles = glob.glob('*integral*.txt')
 	for filename in intFiles:
+		plus=0
 		energy=float(filename.split('_')[1][:-4])
 		energyIndex=energyList.index(energy)
+		if "edge" in filename:
+			plus=1
+			print(f"Edge file: {filename}")
 		openFile=open(filename,'r')
 		lines=openFile.readlines()
 		muArr1[energyIndex].append(float(lines[1].split(' = ')[-1]))
 		sigmaArr1[energyIndex].append(float(lines[2].split(' = ')[-1]))
 		nArr1[energyIndex].append(float(lines[3].split(' = ')[-1]))
 		enResArr1[energyIndex].append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
+		muErrArr1[energyIndex].append(float(lines[6+plus].split(' = ')[-1]))
 
-	return energyList, muArr1, sigmaArr1, nArr1, enResArr1
+	return energyList, muArr1, sigmaArr1, nArr1, enResArr1, muErrArr1
 	
 def getCalibVals_fromTxt(inDir, ele):		
 	energyList, muArr1, sigmaArr1, nArr1, enResArr1 = [],[],[],[],[]

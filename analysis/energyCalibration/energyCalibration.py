@@ -121,8 +121,10 @@ def getFiles(amp):
 		energyList=[22.16, 88.03, 14.41, 122.06, 59.54, 30.97]
 		nameList=["Cadmium109", "Cadmium109", "Cobalt57", "Cobalt57", "Americium241", "Barium133"]
 		#fine-tune the range so that individual peaks are picked out
-		fitLow_p=[0.05,0.25,0.02,0.29,0.17,0.09]
-		fitLow_i=[150,725,0,1700,300,200,100]
+		fitLow_p=[0.05,0.244,0.021,0.3,0.19,0.09]
+		fitLow_i=[150,700,0,1700,350,100]
+		fitHigh_p=[0.11,1,0.06,0.32,1,0.15]
+		fitHigh_i=[400,1000,250,2000,600,300]
 	elif amp==2:
 		with open(input2, 'r') as files2:
 			fileList=files2.readlines()
@@ -130,13 +132,15 @@ def getFiles(amp):
 		nameList=["Cobalt57","Cobalt57", "Americium241", "Cadmium109"]
 		#fine-tune the range so that individual peaks are picked out
 		fitLow_p=[0.03,0.3,0.19,0.06]
-		fitLow_i=[0,900,200,0]
+		fitLow_i=[0,450,200,0]
+		fitHigh_p=[0.07,0.33,1,0.12]
+		fitHigh_i=[100,1000,300,200]
 	else:
 		print("Choose amp1 or amp2")
-		fileList,energyList,nameList,fitLow_p,fitLow_i = [],[],[],[],[]
+		fileList,energyList,nameList,fitLow_p,fitLow_i, fitHigh_p, fitHigh_i = [],[],[],[],[],[],[]
 
 	fileList=fixFileList(fileList)
-	return fileList, energyList, nameList, fitLow_p, fitLow_i
+	return fileList, energyList, nameList, fitLow_p, fitLow_i, fitHigh_p, fitHigh_i
 
 		
 def getEdgeFiles(amp):
@@ -161,7 +165,7 @@ def getEdgeFiles(amp):
 		fitHigh_i=[200]
 	else:
 		print("Choose amp1 or amp2")
-		fileList,energyList,nameList,fitLow_p,fitLow_i, fithith_p, fitHigh_i = [],[],[],[],[],[],[]
+		fileList,energyList,nameList,fitLow_p,fitLow_i, fitHigh_p, fitHigh_i = [],[],[],[],[],[],[]
 	
 	fileList=fixFileList(fileList)
 	return fileList, energyList, nameList, fitLow_p, fitLow_i, fitHigh_p, fitHigh_i
@@ -186,6 +190,7 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 		flatErr=np.array(noise).flatten('F')
 		err_p.append(flatErr[0])
 		err_i.append(flatErr[1])
+	
 		
 	#organize arrays for interpolation
 	trueEn_sorted= sorted(trueEn)
@@ -324,32 +329,29 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 ##############################################################
 
 #files to be used for energy calibration curve
-#amp1
-enResArr1, muArr1, sigmaArr1, nArr1 = [],[],[], []
-
-#amp2
-enResArr2, muArr2, sigmaArr2, nArr2 = [],[],[], []
+enResArr1, muArr1, sigmaArr1, nArr1, muErrArr1 = [],[],[],[],[]
 
 
 if fitSpectra:
-	fileList,energyList,nameList,fitLow_p,fitLow_i = getFiles(pix)
+	fileList,energyList,nameList,fitLow_p,fitLow_i,fitHigh_p, fitHigh_i = getFiles(pix)
 
 	#loop through all files, fit with Gaussian, return mean/sigma/energy resolution and store in arrays - separately for each amp
 	i=0
 	for file in fileList:
 		settings=[file, nameList[i], pix, energyList[i], savePlots]
-		popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fitLow=fitLow_p[i])
+		popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fitLow=fitLow_p[i], fitHigh=fitHigh_p[i])
 		enResFitting.printParams(settings, integ, popt, enRes, pcov)
 		#integral argument = integral bin size (in V)
 		#AMANDA - N calculation is failing for integral
-		poptI, enResI, pcovI, integI = enResFitting.enResPlot(settings, fitLow=fitLow_i[i], integral=20)
+		poptI, enResI, pcovI, integI = enResFitting.enResPlot(settings, fitLow=fitLow_i[i], fitHigh=fitHigh_i[i], integral=10)
 		enResFitting.printParams(settings, integI, poptI, enResI, pcovI, integral=True)
 		enResArr1.append([enRes,enResI])
 		muArr1.append([popt[1],poptI[1]])
 		sigmaArr1.append([popt[2],poptI[2]])
 		nArr1.append([integ,integI])
+		muErrArr1.append([np.sqrt(np.diag(pcov))[1],np.sqrt(np.diag(pcovI))[1]])
 		i+=1
-	
+
 	#loop through additional files, fit with integrated Gaussian (for Compton edge), return mean/sigma/energy resolution and store in arrays
 	edgeFileList,edgeEnergyList,edgeNameList,edgeFitLow_p,edgeFitLow_i,edgeFitHigh_p,edgeFitHigh_i = getEdgeFiles(pix)
 	energyList.extend(edgeEnergyList)
@@ -358,24 +360,26 @@ if fitSpectra:
 	for file in edgeFileList:
 		settings=[file, edgeNameList[i], pix, edgeEnergyList[i],savePlots]
 		popt, enRes, pcov, integ= enResFitting.enResPlot(settings,edge=True,fitLow=edgeFitLow_p[i], fitHigh=edgeFitHigh_p[i])
-		enResFitting.printParams_edge(settings, integ, popt, enRes, pcov)
+		enResFitting.printParams(settings, integ, popt, enRes, pcov, edge=True)
 		poptI, enResI, pcovI, integI = enResFitting.enResPlot(settings,edge=True,fitLow=edgeFitLow_i[i], fitHigh=edgeFitHigh_i[i],integral=20)
-		enResFitting.printParams_edge(settings, integI, poptI, enResI, pcovI, integral=True)
+		enResFitting.printParams(settings, integI, poptI, enResI, pcovI, integral=True, edge=True)
 		enResArr1.append([enRes,enResI])
 		muArr1.append([popt[2],poptI[2]])
 		sigmaArr1.append([popt[3],poptI[3]])
 		nArr1.append([integ,integI])
+		muErrArr1.append([np.sqrt(np.diag(pcov))[1],np.sqrt(np.diag(pcovI))[1]])
 		i+=1
 		
 else: #if spectra have been fit before, pull out values from txt files
 	print("spectra are already fit")	
-	energyList, muArr1, sigmaArr1, nArr1, enResArr1 = enResFitting.getVals_fromTxt(dataDir)
+	energyList, muArr1, sigmaArr1, nArr1, enResArr1, muErrArr1 = enResFitting.getVals_fromTxt(dataDir)
 
 
 
 #calculate error
-errArr1 = enResFitting.calcError(sigmaArr1, nArr1)
-
+#errArr1 = enResFitting.calcError(sigmaArr1, nArr1)
+errArr1 = muErrArr1
+print(errArr1)
 
 #use fit mean of measured peaks and associated error to create calibration curve
 coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]", saveDir)
@@ -392,7 +396,7 @@ if pix==1:
 
 	file="102021_amp1/cadmium109_45min.h5py"
 	settings=[homeDir+file,  "Cadmium109-calib", 1, 22.16, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=17)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=15, fitHigh=30)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 
 
@@ -404,18 +408,18 @@ if pix==1:
 
 	file="110821_amp1/barium133_combined_65min.h5py"
 	settings=[homeDir+file,  "Barium133-calib", 1, 30.97, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=25)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=20, fitHigh=45)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)		
 		
 
 	file="102021_amp1/cobalt57_14h.h5py"
 	settings=[homeDir+file,  "Cobalt57-calib", 1, 122.06, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=110)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=110, fitHigh=130)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)	
 	
 	file="102021_amp1/cobalt57_14h.h5py"
 	settings=[homeDir+file,  "Cobalt57-calib", 1, 14.41, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=10)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=10, fitHigh=30)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)	
 
 
@@ -427,17 +431,17 @@ if pix==1:
 elif pix==2:
 	file="111521_amp2/overnight_Americium241_960min.h5py"
 	settings=[homeDir+file, "Americium241-calib", 2, 59.54, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=50)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=50, fitHigh=70)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 	
 	file="111621_amp2/day_Cadmium109_300min.h5py"
 	settings=[homeDir+file,  "Cadmium109-calib", 2, 22.16, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=17)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=17,fitHigh=30)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 	
 	file="111221_amp2/weekend_Cobalt57_4020min.h5py"
 	settings=[homeDir+file,  "Cobalt57-calib", 2, 122.06, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=110)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=110, fitHigh=175)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 		
 	file="111221_amp2/weekend_Cobalt57_4020min.h5py"
