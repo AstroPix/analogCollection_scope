@@ -150,9 +150,13 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 	f = h5py.File(file,'r')
 	dsName=dataset
 	data=f[dsName+datain]
-	#remove noise - neglect peak heights with <20 mV
+	#remove noise - neglect peak heights with <20(30) mV for amp1(amp2)
+	if pixel==1:
+		noiseCut=0.02
+	elif pixel==2:
+		noiseCut=0.03
 	if not integral:
-		data=[y for y in data if y > 0.02]
+		data=[y for y in data if y > noiseCut]
 	
 	#if calibrating, define which fit functions is used
 	#default fit=-1 => no altering of input data - use for fitting spectra to get mean measured V	
