@@ -128,13 +128,13 @@ def getFiles(amp):
 	elif amp==2:
 		with open(input2, 'r') as files2:
 			fileList=files2.readlines()
-		energyList=[14.41, 122.06, 59.54, 22.16]
-		nameList=["Cobalt57","Cobalt57", "Americium241", "Cadmium109"]
+		energyList=[14.41, 122.06, 59.54, 22.16, 30.97]
+		nameList=["Cobalt57","Cobalt57", "Americium241", "Cadmium109", "Barium133"]
 		#fine-tune the range so that individual peaks are picked out
-		fitLow_p=[0.03,0.3,0.19,0.06]
-		fitLow_i=[0,450,200,0]
-		fitHigh_p=[0.07,0.33,1,0.12]
-		fitHigh_i=[100,1000,300,200]
+		fitLow_p=[0.03,0.3,0.19,0.06,0.1]
+		fitLow_i=[0,450,200,0,75]
+		fitHigh_p=[0.07,0.33,1,0.12,0.15]
+		fitHigh_i=[100,1000,300,200,175]
 	else:
 		print("Choose amp1 or amp2")
 		fileList,energyList,nameList,fitLow_p,fitLow_i, fitHigh_p, fitHigh_i = [],[],[],[],[],[],[]
@@ -446,7 +446,7 @@ elif pix==2:
 		
 	file="111221_amp2/weekend_Cobalt57_4020min.h5py"
 	settings=[homeDir+file,  "Cobalt57-calib", 2, 14.41, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=10)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=10, fitHigh=20)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 		
 		
