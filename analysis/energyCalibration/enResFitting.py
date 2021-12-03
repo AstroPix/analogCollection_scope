@@ -131,7 +131,7 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 #Can fit pulse integral with optional integral input
 #Can fit Compton Edge with integrated Gaussian with optional edge input
 #Can calibrate measured signal to keV using calibration curve and fit calibrated spectrum with optional edge and fit inputs
-def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, dataset='run1', fit=-1, coef=0, norm=False):
+def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, dataset='run1', fit=-1, coef=0, norm=False):
 	#Define inputs
 	file=settings[0]
 	title=settings[1]
@@ -150,6 +150,8 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 	f = h5py.File(file,'r')
 	dsName=dataset
 	data=f[dsName+datain]
+	
+	scaling=f[dsName+'_scaling']
 	#remove noise - neglect peak heights with <20(30) mV for amp1(amp2)
 	if pixel==1:
 		noiseCut=0.02
@@ -157,6 +159,10 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 		noiseCut=0.03
 	if not integral:
 		data=[y for y in data if y > noiseCut]
+	else:
+		#scale integral by scope resolution XINCR, noise cut values <0
+		deltaT=scaling[1] #XINCR value in s (usually around 100 us)
+		data=[y*deltaT*1e6 for y in data if y>0] #[V*ns]
 	
 	#if calibrating, define which fit functions is used
 	#default fit=-1 => no altering of input data - use for fitting spectra to get mean measured V	
@@ -182,19 +188,21 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 		data=data1+data2
 	
 	#Create arrays for binning based on scope resolution
-	scaling=f[dsName+'_scaling']
 	xBinWidth=scaling[3]#YMULT Value
 	if xBinWidth<1e-5: #shouldn't be - failsafe
 		xBinWidth=0.002
 	if fit>-1:
 		xBinWidth=0.5 #0.5 keV bins for calibrated data
+	if integral:
+		xBinWidth=1 #[V*ns]
 	xMax=np.max(data)
-	if integral>0:
-		xMin=np.min(data)
-	else:
-		xMin=0
-	if integral>0:
-		xBinWidth=integral
+	#if integral>0:
+	#	xMin=np.min(data)
+	#else:
+	#	xMin=0
+	xMin=0
+	#if integral>0:
+	#	xBinWidth=integral
 	binEdges=np.arange(xMin,xMax+xBinWidth,xBinWidth)#use peakMax+xBinWidth to overshoot range and include all data
 	
 	#Create histogram of data
@@ -227,17 +235,11 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 		#Calculate N (events within 2sigma of mean)
 		integ=scipy.integrate.quad(Edge, -2*Sigma, 2*Sigma, args=(Amp1,Amp2,Mu,Sigma))
 		#returns integral and uncertainty on calculation - only return integral value
-	else:
+	else:	
+		#AMANDA - revisit with iterative fit
 		try:
 			popt, pcov = iterativeFit(Gauss, p01, binCenters, ydata, low_i, high_i)
-			"""
-			errs=np.sqrt(ydata[low_i:high_i])
-			#avoid division by zero
-			for i,err in enumerate(errs):
-				if err==0:
-					errs[i]=1e-8
-			popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=1/errs, p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
-			"""
+			#popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=1/errs, p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
 			#range is set with low_i and high_i index values for input arrays
 			#bounds keeps all parameters positive
 		except RuntimeError: #fit could not converge
@@ -270,7 +272,7 @@ def enResPlot(settings, integral=0, edge=False, fitLow=0, fitHigh=np.inf, datase
 	plt.title(f"Energy Resolution - {title}, pixel {pixel}")
 	plt.ylabel('Counts')
 	if integral:
-		plt.xlabel('Integrated energy [V]')
+		plt.xlabel('Integrated energy [V*ns]')
 	elif edge:
 		plt.title(f"Edge Fit - {title}, pixel {pixel}")
 		plt.xlabel('Peak Energy [V]')
