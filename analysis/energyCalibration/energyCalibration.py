@@ -121,10 +121,12 @@ def getFiles(amp):
 		energyList=[22.16, 88.03, 14.41, 122.06, 59.54, 30.97]
 		nameList=["Cadmium109", "Cadmium109", "Cobalt57", "Cobalt57", "Americium241", "Barium133"]
 		#fine-tune the range so that individual peaks are picked out
-		fitLow_p=[0.05,0.244,0.021,0.3,0.19,0.09]
-		fitLow_i=[150,700,0,1700,350,100]
+		fitLow_p=[0.05,0.244,0,0.3,0.19,0.09]
+		#fitLow_i=[150,700,0,1700,350,100]
+		fitLow_i=[0,70,0,70,40,0]
 		fitHigh_p=[0.11,1,0.06,0.32,1,0.15]
-		fitHigh_i=[400,1000,250,2000,600,300]
+		#fitHigh_i=[400,1000,250,2000,600,300]
+		fitHigh_i=[30,80,100,80,60,100]
 	elif amp==2:
 		with open(input2, 'r') as files2:
 			fileList=files2.readlines()
@@ -132,9 +134,11 @@ def getFiles(amp):
 		nameList=["Cobalt57","Cobalt57", "Americium241", "Cadmium109", "Barium133"]
 		#fine-tune the range so that individual peaks are picked out
 		fitLow_p=[0.03,0.3,0.19,0.06,0.1]
-		fitLow_i=[0,450,200,0,75]
+		#fitLow_i=[0,450,200,0,75]
+		fitLow_i=[0,45,20,2,4]
 		fitHigh_p=[0.07,0.33,1,0.12,0.15]
-		fitHigh_i=[100,1000,300,200,175]
+		#fitHigh_i=[100,1000,300,200,175]
+		fitHigh_i=[100,60,30,15,20]
 	else:
 		print("Choose amp1 or amp2")
 		fileList,energyList,nameList,fitLow_p,fitLow_i, fitHigh_p, fitHigh_i = [],[],[],[],[],[],[]
@@ -152,8 +156,8 @@ def getEdgeFiles(amp):
 		nameList=["Cobalt57"]
 		fitLow_p=[0.13]
 		fitHigh_p=[0.17]
-		fitLow_i=[0]
-		fitHigh_i=[1000]
+		fitLow_i=[20]
+		fitHigh_i=[35]
 	elif amp==2:
 		with open(input2_edge, 'r') as files2:
 			fileList=files2.readlines()
@@ -161,8 +165,8 @@ def getEdgeFiles(amp):
 		nameList=["Cobalt57"]
 		fitLow_p=[0.15]
 		fitHigh_p=[0.19]
-		fitLow_i=[100]
-		fitHigh_i=[200]
+		fitLow_i=[7]
+		fitHigh_i=[25]
 	else:
 		print("Choose amp1 or amp2")
 		fileList,energyList,nameList,fitLow_p,fitLow_i, fitHigh_p, fitHigh_i = [],[],[],[],[],[],[]
@@ -343,7 +347,7 @@ if fitSpectra:
 		enResFitting.printParams(settings, integ, popt, enRes, pcov)
 		#integral argument = integral bin size (in V)
 		#AMANDA - N calculation is failing for integral
-		poptI, enResI, pcovI, integI = enResFitting.enResPlot(settings, fitLow=fitLow_i[i], fitHigh=fitHigh_i[i], integral=10)
+		poptI, enResI, pcovI, integI = enResFitting.enResPlot(settings, fitLow=fitLow_i[i], fitHigh=fitHigh_i[i], integral=True)
 		enResFitting.printParams(settings, integI, poptI, enResI, pcovI, integral=True)
 		enResArr1.append([enRes,enResI])
 		muArr1.append([popt[1],poptI[1]])
@@ -431,7 +435,7 @@ if pix==1:
 elif pix==2:
 	file="111521_amp2/overnight_Americium241_960min.h5py"
 	settings=[homeDir+file, "Americium241-calib", 2, 59.54, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=50, fitHigh=70)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=52, fitHigh=65)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 	
 	file="111621_amp2/day_Cadmium109_300min.h5py"
@@ -441,12 +445,12 @@ elif pix==2:
 	
 	file="111221_amp2/weekend_Cobalt57_4020min.h5py"
 	settings=[homeDir+file,  "Cobalt57-calib", 2, 122.06, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=110, fitHigh=175)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=110, fitHigh=135)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 		
 	file="111221_amp2/weekend_Cobalt57_4020min.h5py"
 	settings=[homeDir+file,  "Cobalt57-calib", 2, 14.41, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=10, fitHigh=20)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitHigh=20)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 		
 		
