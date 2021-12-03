@@ -36,11 +36,13 @@ def getArrayIndex(array, low,high):
 	return low_i, high_i
 	
 #Return lowest recorded data value
-def getMin(file, integral=0, dataset='run1'):
-
+def getMin(file, integral=False, dataset='run1'):
+	scale=1.
 	#Distinguish between peaks and integral
-	if (integral>0):
+	if integral:
 		datain='_integral'
+		scaling=f[dsName+'_scaling']
+		scale=scaling[1] #XINCR value in s (usually around 100 us)
 	else: #peaks
 		datain='_peaks'
 
@@ -48,20 +50,29 @@ def getMin(file, integral=0, dataset='run1'):
 	print(file)
 	f = h5py.File(file,'r')
 	dsName=dataset
-	data=f[dsName+datain]
+	data=f[dsName+datain]	
+	minn=np.min(data)
 	
-	return np.min(data)	
+	#if integral, scale by deltaT
+	return minn*scale
 	
 def getSaveto():
 	#go to directory where this script (and runOptions) lives
 	os.chdir(sys.path[0])
 	#pull saveDir variable from runOptions
-	with open("runOptions.txt", 'r') as runOptions:
-		lines=runOptions.readlines()
-		for line in lines:
-			if "saveDir = " in line:
-				saveDir = line.split(" = ")[1][:-1]
-	return saveDir
+	try:
+		with open("runOptions.txt", 'r') as runOptions:
+			lines=runOptions.readlines()
+			for line in lines:
+				if "saveDir = " in line:
+					saveDir = line.split(" = ")[1][:-1]
+		runOptions.close()
+		return saveDir
+	except IOError:
+		print("Input file does not exist")
+		print("Please provide a save location: ")
+		saveDir=input()
+		return saveDir
 
 
 def calc_chisquare(meas, sigma, fit):
@@ -76,7 +87,6 @@ def closest(lst, K):
 	
 def getGausRange(x,y,errs,popt):
 	#y is array of bin content values
-	
 	rang=3*popt[2]
 	bin_mean=closest(x,popt[1])
 	bin_3sig=closest(x,popt[1]+rang)
@@ -84,9 +94,10 @@ def getGausRange(x,y,errs,popt):
 	
 	return x[bin_3sigN:bin_3sig],y[bin_3sigN:bin_3sig],errs[bin_3sigN:bin_3sig]
  
+#DOES NOT WORK WELL
+#favors "poor fit" by eye because less bins in chi2 calculation lead to smaller values naturally
 def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 	#iterate on fit until max iterations or chi2/ndof<1 (fit within 1 sigma)
-
 	errs=np.sqrt(y)
 	#avoid division by zero
 	for i,err in enumerate(errs):
@@ -207,14 +218,17 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 	
 	#Create histogram of data
 	hist=plt.hist(data,bins=binEdges,label=r'Data', color='blue')
-	ydata=hist[0]
+	ydata=hist[0]	
+	errs=np.sqrt(ydata)
+	#avoid division by zero
+	for i,err in enumerate(errs):
+		if err==0:
+			errs[i]=1e-8
 	binCenters=hist[1]+xBinWidth/2
 	binCenters=binCenters[:-1]
 
 	#Set fit range
 	low_i,high_i=getArrayIndex(binCenters,fitLow,fitHigh)
-	print(f"Inputs: low = {fitLow}, high = {fitHigh}")
-	print(f"Get indices {low_i} and {high_i}")
 	
 	#Set up fit with guesses for p01: [Amplitude, Mu, Sigma]
 	muGuess=np.mean(data)
@@ -226,11 +240,10 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 		p01 = [ampGuess, ampGuess, muGuess, sigGuess]
 	else:
 		p01 = [ampGuess, muGuess, sigGuess]
-		print(p01)
 	
 	#Fit histogram over desired range
 	if edge:
-		popt, pcov = curve_fit(Edge, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
+		popt, pcov = curve_fit(Edge, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=errs[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
 		(Amp1, Amp2, Mu, Sigma)=popt
 		#Calculate N (events within 2sigma of mean)
 		integ=scipy.integrate.quad(Edge, -2*Sigma, 2*Sigma, args=(Amp1,Amp2,Mu,Sigma))
@@ -238,14 +251,14 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 	else:	
 		#AMANDA - revisit with iterative fit
 		try:
-			popt, pcov = iterativeFit(Gauss, p01, binCenters, ydata, low_i, high_i)
-			#popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=1/errs, p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
+			#popt, pcov = iterativeFit(Gauss, p01, binCenters, ydata, low_i, high_i)
+			popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=errs[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
 			#range is set with low_i and high_i index values for input arrays
 			#bounds keeps all parameters positive
 		except RuntimeError: #fit could not converge
 			sigGuess=sum(ydata*(binCenters-muGuess)**2)
 			p01 = [ampGuess, muGuess, sigGuess]
-			popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
+			popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=errs[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
 		(Amp, Mu, Sigma)=popt
 		#Calculate N (events under fit)
 		integ=scipy.integrate.quad(Gauss, -np.inf, np.inf, args=(Amp,Mu,Sigma))
@@ -282,14 +295,17 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 		plt.xlabel('Calibrated Energy [keV]')
 		plt.title(f"Calibrated {title}, pixel {pixel}")
 
-	#save figure
-	if fit>-1:
-		saveto=f"{getSaveto()}{title}{datain}_{energy}line_calibrated.pdf"
-	elif edge:	
-		saveto=f"{getSaveto()}{title}{datain}EdgeFit_{energy}edge.pdf"
+	if savePlots:
+		#save figure
+		if fit>-1:
+			saveto=f"{getSaveto()}{title}{datain}_{energy}line_calibrated.pdf"
+		elif edge:	
+			saveto=f"{getSaveto()}{title}{datain}EdgeFit_{energy}edge.pdf"
+		else:
+			saveto=f"{getSaveto()}{title}{datain}_{energy}line.pdf"
+		plt.savefig(saveto)
 	else:
-		saveto=f"{getSaveto()}{title}{datain}_{energy}line.pdf"
-	plt.savefig(saveto) if savePlots else plt.show()
+		plt.show()
 	plt.clf()
 		
 	f.close()
