@@ -56,23 +56,26 @@ def getMin(file, integral=False, dataset='run1'):
 	#if integral, scale by deltaT
 	return minn*scale
 	
-def getSaveto():
+def getSaveto(savedir=None):
+	if savedir:
+		return savedir
+	else:
 	#go to directory where this script (and runOptions) lives
-	os.chdir(sys.path[0])
-	#pull saveDir variable from runOptions
-	try:
-		with open("runOptions.txt", 'r') as runOptions:
-			lines=runOptions.readlines()
-			for line in lines:
-				if "saveDir = " in line:
-					saveDir = line.split(" = ")[1][:-1]
-		runOptions.close()
-		return saveDir
-	except IOError:
-		print("Input file does not exist")
-		print("Please provide a save location: ")
-		saveDir=input()
-		return saveDir
+		os.chdir(sys.path[0])
+		#pull saveDir variable from runOptions
+		try:
+			with open("runOptions.txt", 'r') as runOptions:
+				lines=runOptions.readlines()
+				for line in lines:
+					if "saveDir = " in line:
+						saveDir = line.split(" = ")[1][:-1]
+			runOptions.close()
+			return saveDir
+		except IOError:
+			print("Input file does not exist")
+			print("Please provide a save location: ")
+			saveDir=input()
+			return saveDir
 
 
 def calc_chisquare(meas, sigma, fit):
@@ -142,7 +145,7 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 #Can fit pulse integral with optional integral input
 #Can fit Compton Edge with integrated Gaussian with optional edge input
 #Can calibrate measured signal to keV using calibration curve and fit calibrated spectrum with optional edge and fit inputs
-def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, dataset='run1', fit=-1, coef=0, norm=False):
+def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, dataset='run1', fit=-1, coef=0, savedir=None):
 	#Define inputs
 	file=settings[0]
 	title=settings[1]
@@ -298,11 +301,11 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 	if savePlots:
 		#save figure
 		if fit>-1:
-			saveto=f"{getSaveto()}{title}{datain}_{energy}line_calibrated.pdf"
+			saveto=f"{getSaveto(savedir)}{title}{datain}_{energy}line_calibrated.pdf"
 		elif edge:	
-			saveto=f"{getSaveto()}{title}{datain}EdgeFit_{energy}edge.pdf"
+			saveto=f"{getSaveto(savedir)}{title}{datain}EdgeFit_{energy}edge.pdf"
 		else:
-			saveto=f"{getSaveto()}{title}{datain}_{energy}line.pdf"
+			saveto=f"{getSaveto(savedir)}{title}{datain}_{energy}line.pdf"
 		plt.savefig(saveto)
 	else:
 		plt.show()
@@ -314,7 +317,7 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 		
 	
 #Calculate error on fit parameters, save in text file	
-def printParams(settings, integ, popt, en_res, pcov, integral=False, edge=False):
+def printParams(settings, integ, popt, en_res, pcov, integral=False, edge=False,savedir=None):
 	#Define inputs
 	file=settings[0]
 	title=settings[1]
@@ -341,11 +344,11 @@ def printParams(settings, integ, popt, en_res, pcov, integral=False, edge=False)
 	
 	if savePlots:
 		if edge:		
-			saveto=f"{getSaveto()}{title}_{energy}edge{datain}EnRes.txt"
+			saveto=f"{getSaveto(savedir)}{title}_{energy}edge{datain}EnRes.txt"
 			k=open(saveto, "w")
 			k.write("Amplitude erfc= %d Amplitude const = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp1, Amp2, Mu, Sigma)+"\n")
 		else:
-			saveto=f"{getSaveto()}{title}_{energy}line{datain}EnRes.txt"
+			saveto=f"{getSaveto(savedir)}{title}_{energy}line{datain}EnRes.txt"
 			k=open(saveto, "w")
 			k.write("Amplitude = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp, Mu, Sigma)+"\n")
 		k.write("Events under fit (N) = %0.3f" %(integ)+"\n")
