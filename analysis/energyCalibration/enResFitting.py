@@ -118,7 +118,8 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 			print("Too small a range to fit")
 			break
 		else:
-			popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], sigma=errs[low:high], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
+			popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], p0=p01, bounds=(0,np.inf), maxfev=8000, absolute_sigma=True)
+			#popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], sigma=errs[low:high], p0=p01, bounds=(0,np.inf), maxfev=8000, absolute_sigma=True)
 			x1,y1,err1=getGausRange(x,y,errs,popt)
 			TS = calc_chisquare(y1, err1, Gauss(x1,*popt))
 			NDF = len(y1) - len(popt)
@@ -254,8 +255,8 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 	else:	
 		#AMANDA - revisit with iterative fit
 		try:
-			#popt, pcov = iterativeFit(Gauss, p01, binCenters, ydata, low_i, high_i)
-			popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=errs[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
+			popt, pcov = iterativeFit(Gauss, p01, binCenters, ydata, low_i, high_i)
+			#popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=errs[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
 			#range is set with low_i and high_i index values for input arrays
 			#bounds keeps all parameters positive
 		except RuntimeError: #fit could not converge
@@ -393,13 +394,10 @@ def getVals_fromTxt(inDir):
 		energyList.append(float(filename.split('_')[1][:-4]))
 		if "edge" in filename:
 			plus=1
-			print(f"Edge file: {filename}")
-			print(f"Add {plus} to index")
 		openFile=open(filename,'r')
 		lines=openFile.readlines()
 		muArr1.append([float(lines[1].split(' = ')[-1])])
 		mu=lines[1].split(' = ')[-1]
-		print(f"Mu: {mu}")
 		sigmaArr1.append([float(lines[2].split(' = ')[-1])])
 		nArr1.append([float(lines[3].split(' = ')[-1])])
 		enResArr1.append([float(lines[4].split(' = ')[-1][:-2])])#eliminate % sign at the end
@@ -412,7 +410,6 @@ def getVals_fromTxt(inDir):
 		energyIndex=energyList.index(energy)
 		if "edge" in filename:
 			plus=1
-			print(f"Edge file: {filename}")
 		openFile=open(filename,'r')
 		lines=openFile.readlines()
 		muArr1[energyIndex].append(float(lines[1].split(' = ')[-1]))
