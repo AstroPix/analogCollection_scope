@@ -78,23 +78,12 @@ def odr_polyfit(fitdata, deg):
 	sum_square=out.sum_square
 	return coef, res_var, sum_square
 	
-def getSumSq(trueEn, voltage, err, coef):
+def getSumSq(trueEn, voltage, err, fn):
 	sum_square=0
 	for i in range(len(trueEn)):
-		fitVal=interpolate.splev(voltage[i], coef)
+		fitVal=fn(voltage[i])
 		num = (trueEn[i]-fitVal)**2
-		fitErr=interpolate.splev(err[i],coef)
-		denom = fitErr**2
-		sum_square += (num/denom)
-		i+=1
-	return sum_square
-	
-def getSumSq_lin(trueEn, voltage, err, coef):
-	sum_square=0
-	for i in range(len(trueEn)):
-		fitVal=piecewise_linear(voltage[i],*coef)	
-		num = (trueEn[i]-fitVal)**2
-		fitErr=piecewise_linear(err[i],*coef)	
+		fitErr=fn(err[i])
 		denom = fitErr**2
 		sum_square += (num/denom)
 		i+=1
@@ -203,16 +192,19 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	err_p_sorted = [x for _, x in sorted(zip(trueEn, err_p), key=lambda pair: pair[0])]
 	amp_i_sorted = [x for _, x in sorted(zip(trueEn, amp_i), key=lambda pair: pair[0])]
 	err_i_sorted = [x for _, x in sorted(zip(trueEn, err_i), key=lambda pair: pair[0])]
+	"""
 	#sort by measurement - should be the same
 	trueEn_sorted2 = [x for _, x in sorted(zip(amp_p, trueEn), key=lambda pair: pair[0])]
 	amp_p_sorted2 = [x for _, x in sorted(zip(trueEn, amp_p), key=lambda pair: pair[1])]
 	err_p_sorted2 = [x for _, x in sorted(zip(amp_p, err_p), key=lambda pair: pair[0])]
 	amp_i_sorted2 = [x for _, x in sorted(zip(trueEn, amp_i), key=lambda pair: pair[1])]
 	err_i_sorted2 = [x for _, x in sorted(zip(amp_i, err_i), key=lambda pair: pair[0])]
+	"""
 
 	
 	#Plot data and fit functions
-	x = np.linspace(np.min(trueEn), np.max(trueEn), 100)
+	x = np.linspace(np.min(trueEn), np.max(trueEn), 1000)
+	xx = np.linspace(np.min(amp_p), np.max(amp_p), 1000)
 	plt.errorbar(trueEn, amp_p, yerr=err_p, fmt='o', label="data")
 	
 	if fit==0:
@@ -220,35 +212,78 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 		linPlot=linFit(x,*coef)
 		plt.plot(x, linPlot, '--k',label=f"Linear fit")
 		print(f"Peak linear fit: y={coef[0]:.3f}x+{coef[1]:.3f}")
+		#invert - if value outside of calibrated range, assign it a value of -1 (underflow)
+		#invertedFn=interpolate.interp1d(linPlot,x,fill_value="extrapolate")
+		invertedFn=interpolate.interp1d(linPlot,x,fill_value="extrapolate")
+		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, invertedFn)
+		ndof = np.float64(len(trueEn)-1)#loose 1 dof 
+		res_var = sum_square/ndof
+		fn="linear"
 	elif fit==1:
 		coef2, coef2_pcov = curve_fit(quadFit,trueEn,amp_p,sigma=err_p,absolute_sigma=True) #quadratic
 		quadPlot=quadFit(x,*coef2)
 		plt.plot(x, quadPlot, '--r',label=f"y={coef2[0]:.5f}x$^2$+{coef2[1]:.3f}x+{coef2[2]:.3f}")
 		print(f"Peak quadratic fit: y={coef2[0]:.5f}x$^2$+{coef2[1]:.3f}x+{coef2[2]:.3f}")
+		#invert - if value outside of calibrated range, assign it a value of -1 (underflow)
+		invertedFn=interpolate.interp1d(quadPlot,x,fill_value="extrapolate")
+		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, invertedFn)
+		ndof = np.float64(len(trueEn)-2)#loose 2 dof 
+		res_var = sum_square/ndof
+		fn="quadratic"
 	elif fit==2:
 		coef3, coef3_pcov = curve_fit(triFit,trueEn,amp_p,sigma=err_p,absolute_sigma=True) #3rd deg poly
 		triPlot=triFit(x,*coef3)
 		plt.plot(x, triPlot, '--b',label=f"3rd deg. polynomial")
 		print(f"Peak 3rd deg poly fit: y={coef3[0]:.3f}x$^3$+{coef3[1]:.3f}x$^2$+{coef3[2]:.3f}x + {coef3[3]:.3f}")
+		#invert - if value outside of calibrated range, assign it a value of -1 (underflow)
+		invertedFn=interpolate.interp1d(triPlot,x,fill_value="extrapolate")
+		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, invertedFn)
+		ndof = np.float64(len(trueEn)-3)#loose 3 dof 
+		res_var = sum_square/ndof
+		fn="3rd degree polynomial"
 	elif fit==3:
 		popt, pcov = curve_fit(sqrtFit, trueEn, amp_p, sigma=err_p,absolute_sigma=True) #square root
 		sqrt_fn = sqrtFit(x, *popt)
 		plt.plot(x,sqrt_fn,'--g',label=f"y={popt[0]:.3f}*sqrt(x)+{popt[1]:.3f}")
 		print(f"y={popt[0]:.3f}*sqrt(x)+{popt[1]:.3f}")
+		#invert - if value outside of calibrated range, assign it a value of -1 (underflow)
+		invertedFn=interpolate.interp1d(sqrt_fn,x,fill_value="extrapolate")
+		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, invertedFn)
+		ndof = np.float64(len(trueEn)-2)#loose 2 dof 
+		res_var = sum_square/ndof
+		fn="sqrt"
 	elif fit==4:
 		tck1 = interpolate.splrep(trueEn_sorted, amp_p_sorted,k=1) #linear spline
 		spline1Plot = interpolate.splev(x, tck1)
 		plt.plot(x, spline1Plot, '--g', label="linear spline")
+		#invert - if value outside of calibrated range, assign it a value of -1 (underflow)
+		invertedFn=interpolate.interp1d(spline1Plot,x,fill_value="extrapolate")
+		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, invertedFn)
+		ndof = np.float64(len(trueEn)-3)#loose 3 dof for continuinty requirements
+		res_var = sum_square/ndof
+		fn="spline,k=1"
 	elif fit==5:	
 		tck = interpolate.splrep(trueEn_sorted, amp_p_sorted) #cubic spline
 		splinePlot = interpolate.splev(x, tck)
 		plt.plot(x, splinePlot, '--g', label="Cubic Spline")
+		#invert - if value outside of calibrated range, assign it a value of -1 (underflow)
+		invertedFn=interpolate.interp1d(splinePlot,x,fill_value="extrapolate")		
+		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, invertedFn)
+		ndof = np.float64(len(trueEn)-3)#loose 3 dof for continuinty requirements
+		res_var = sum_square/ndof
+		fn="spline,k=3"
 	elif fit==6: 
 		#piecewise linear, floating breakpoint
 		coef, coef_pcov = curve_fit(piecewise_linear, trueEn, amp_p,sigma=err_p,absolute_sigma=True,p0=[50,0.17,0,0])
 		piecew=piecewise_linear(x,*coef)
 		print(coef)
 		plt.plot(x, piecew, label="Piecewise linear")
+		#invert - if value outside of calibrated range, assign it a value of -1 (underflow)
+		invertedFn=interpolate.interp1d(piecew,x,fill_value="extrapolate")
+		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, invertedFn)
+		ndof = np.float64(len(trueEn)-4)#loose 4 dof 
+		res_var = sum_square/ndof
+		fn="piecewise"
 
 
 	plt.xlabel("True Energy [keV]")
@@ -261,56 +296,6 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	plt.savefig(f"{saveto}peaks_{dataNameStr}.pdf") if savePlots else plt.show()
 	plt.clf()
 	
-	
-	#fit opposite orientation so that scaling is easier
-	#need different regression technique for X-error bars
-	if fit==0:
-		datain = RealData(amp_p, trueEn, sx=err_p)
-		coef_fit, res_var, sum_square = odr_polyfit(datain,1)
-		ndof= sum_square/res_var
-		fn="m*x + b"
-	elif fit==1:
-		datain = RealData(amp_p, trueEn, sx=err_p)
-		coef_fit, res_var, sum_square = odr_polyfit(datain,2)
-		ndof= sum_square/res_var
-		fn="a * x *x + b*x + c"
-	elif fit==2:
-		datain = RealData(amp_p, trueEn, sx=err_p)
-		coef_fit, res_var, sum_square = odr_polyfit(datain,3)
-		ndof= sum_square/res_var
-		fn="a*x*x*x + b*x*x + c*x + d"
-	elif fit==3:
-		datain = RealData(amp_p, trueEn, sx=err_p)
-		sqrt_model = Model(sqrt_odr)
-		odr_sqrt = ODR(datain, sqrt_model,[1e-8,1e-8])
-		out_sqrt=odr_sqrt.run()
-		coef_fit=out_sqrt.beta
-		sum_square=out_sqrt.sum_square
-		res_var=out_sqrt.res_var
-		ndof= sum_square/res_var
-		fn="A*np.sqrt(x)+B"
-	elif fit==4:
-		coef_fit = interpolate.splrep(amp_p_sorted2, trueEn_sorted2, w=err_p_sorted2, k=1)
-		sum_square=getSumSq(trueEn_sorted2, amp_p_sorted2, err_p_sorted2, coef_fit)
-		ndof = float(len(trueEn)-3)#loose 3 dof for continuinty requirements
-		res_var = sum_square/ndof
-		fn="spline, k=1"
-	elif fit==5:
-		coef_fit = interpolate.splrep(amp_p_sorted2, trueEn_sorted2, w=err_p_sorted2)
-		sum_square=getSumSq(trueEn_sorted2, amp_p_sorted2, err_p_sorted2, coef_fit)
-		ndof = np.float64(len(trueEn)-3)#loose 3 dof for continuinty requirements
-		res_var = sum_square/ndof
-		print(f"{sum_square}/{ndof} = {res_var}")
-		print(f"{type(sum_square)}/{type(ndof)} = {type(res_var)}")
-		fn="spline,k=3"
-	elif fit==6:
-		#piecewise linear, floating breakpoint
-		#not fit with x error bars
-		coef_fit, coef_pcov = curve_fit(piecewise_linear, amp_p, trueEn ,p0=[50,0.17,0,0])
-		sum_square=getSumSq_lin(trueEn_sorted, amp_p_sorted, err_p_sorted, coef_fit)
-		ndof = len(trueEn) - len(coef_fit)
-		res_var = sum_square/float(ndof)
-		fn = "piecewise linear, breakpoint ("+str(coef_fit[0])+","+str(coef_fit[1])+")"
 				
 	#print/save params
 	if savePlots:
@@ -319,8 +304,8 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 		k.write("ODR fit (x=measured energy [V], y=true energy [keV])\n")
 		k.write("chi2/ndf = %0.3f/%d = %0.3f" %(sum_square,ndof,res_var) +"\n")
 		k.write(fn+"\n")
-		k.write("Coefficients: \n")
-		k.write(str(coef_fit))
+		#k.write("Coefficients: \n")
+		#k.write(str(coef_fit))
 		k.close()
 		#Display contents to terminal
 		m = open(saveto, "r")
@@ -331,11 +316,11 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 		print("ODR fit (x=measured energy [V], y=true energy [keV])")
 		print("chi2/ndf = %0.3f/%d = %0.3f" %(sum_square,int(sum_square/res_var)+1,res_var))
 		print(fn)
-		print("Coefficients:")
-		print(coef_fit)
+		#print("Coefficients:")
+		#print(coef_fit)
 		
-	return coef_fit
-	
+	#return coef_fit
+	return invertedFn
 	
 	
 ########################################################################################
@@ -418,7 +403,7 @@ if pix==1:
 	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=80)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)		
 
-	
+
 	file="110821_amp1/barium133_combined_65min.h5py"
 	settings=[homeDir+file,  "Barium133-calib", 1, 30.97, savePlots]
 	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=20, fitHigh=45)

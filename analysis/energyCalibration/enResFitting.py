@@ -179,28 +179,10 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 		deltaT=scaling[1] #XINCR value in s (usually around 100 us)
 		data=[y*deltaT*1e6 for y in data if y>0] #[V*ns]
 	
-	#if calibrating, define which fit functions is used
-	#default fit=-1 => no altering of input data - use for fitting spectra to get mean measured V	
-	if fit==0:
-		#linear fit
-		data=[(coef[0]*x+coef[1]) for x in data]
-	elif fit==1:
-		#quadratic fit
-		data=[(coef[0]*x*x+coef[1]*x+coef[2]) for x in data]
-	elif fit==2:
-		#3rd deg poly fit
-		data=[(coef[0]*x*x*x+coef[1]*x*x+coef[2]*x+coef[3]) for x in data]
-	elif fit==3:
-		#sqrt fit
-		data=[(coef[0]*np.sqrt(x)+coef[1]) for x in data]
-	elif (fit==4 or fit==5):
-		#spline
-		data=interpolate.splev(data, coef)
-	elif fit==6:
-		#piecewise
-		data1=[coef[2]*x for x in data if x<coef[0]]#low function
-		data2=[coef[3]*x for x in data if x>=coef[0]]#high function
-		data=data1+data2
+	#if calibrating, plug values into calibration function (unless value falls outside of calibration - then discard)
+	if fit>=0:
+		data=[float(coef(x)) for x in data if float(coef(x))>0]
+
 	
 	#Create arrays for binning based on scope resolution
 	xBinWidth=scaling[3]#YMULT Value
