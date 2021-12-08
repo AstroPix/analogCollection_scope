@@ -121,24 +121,24 @@ def getFiles(amp):
 		energyList=[22.16, 88.03, 14.41, 122.06, 59.54, 30.97]
 		nameList=["Cadmium109", "Cadmium109", "Cobalt57", "Cobalt57", "Americium241", "Barium133"]
 		#fine-tune the range so that individual peaks are picked out
-		fitLow_p=[0.05,0.244,0,0.3,0.19,0.09]
+		fitLow_p=[0.05,0.244,0.02,0.3,0.19,0.09]
 		#fitLow_i=[150,700,0,1700,350,100]
-		fitLow_i=[0,70,0,70,40,0]
-		fitHigh_p=[0.11,1,0.06,0.32,1,0.15]
+		fitLow_i=[0,70,0,70,40,10]
+		fitHigh_p=[0.11,1,0.07,0.32,1,0.15]
 		#fitHigh_i=[400,1000,250,2000,600,300]
 		fitHigh_i=[30,80,100,80,60,100]
 	elif amp==2:
 		with open(input2, 'r') as files2:
 			fileList=files2.readlines()
-		energyList=[14.41, 122.06, 59.54, 22.16, 30.97]
-		nameList=["Cobalt57","Cobalt57", "Americium241", "Cadmium109", "Barium133"]
+		energyList=[14.41, 122.06, 59.54, 22.16, 88.03, 30.97]
+		nameList=["Cobalt57","Cobalt57", "Americium241", "Cadmium109", "Cadmium109","Barium133"]
 		#fine-tune the range so that individual peaks are picked out
-		fitLow_p=[0.03,0.3,0.19,0.06,0.1]
+		fitLow_p=[0.03,0.3,0.18,0.06,0.25,0.1]
 		#fitLow_i=[0,450,200,0,75]
-		fitLow_i=[0,45,20,2,4]
-		fitHigh_p=[0.07,0.33,1,0.12,0.15]
+		fitLow_i=[0,45,20,2,33,4]
+		fitHigh_p=[0.08,0.33,0.24,0.12,0.28,0.15]
 		#fitHigh_i=[100,1000,300,200,175]
-		fitHigh_i=[100,60,30,15,20]
+		fitHigh_i=[100,60,30,15,43,20]
 	else:
 		print("Choose amp1 or amp2")
 		fileList,energyList,nameList,fitLow_p,fitLow_i, fitHigh_p, fitHigh_i = [],[],[],[],[],[],[]
@@ -197,11 +197,18 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	
 		
 	#organize arrays for interpolation
-	trueEn_sorted= sorted(trueEn)
+	trueEn_sorted = sorted(trueEn)
+	#sort by energy
 	amp_p_sorted = [x for _, x in sorted(zip(trueEn, amp_p), key=lambda pair: pair[0])]
 	err_p_sorted = [x for _, x in sorted(zip(trueEn, err_p), key=lambda pair: pair[0])]
 	amp_i_sorted = [x for _, x in sorted(zip(trueEn, amp_i), key=lambda pair: pair[0])]
 	err_i_sorted = [x for _, x in sorted(zip(trueEn, err_i), key=lambda pair: pair[0])]
+	#sort by measurement - should be the same
+	trueEn_sorted2 = [x for _, x in sorted(zip(amp_p, trueEn), key=lambda pair: pair[0])]
+	amp_p_sorted2 = [x for _, x in sorted(zip(trueEn, amp_p), key=lambda pair: pair[1])]
+	err_p_sorted2 = [x for _, x in sorted(zip(amp_p, err_p), key=lambda pair: pair[0])]
+	amp_i_sorted2 = [x for _, x in sorted(zip(trueEn, amp_i), key=lambda pair: pair[1])]
+	err_i_sorted2 = [x for _, x in sorted(zip(amp_i, err_i), key=lambda pair: pair[0])]
 
 	
 	#Plot data and fit functions
@@ -241,7 +248,6 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 		coef, coef_pcov = curve_fit(piecewise_linear, trueEn, amp_p,sigma=err_p,absolute_sigma=True,p0=[50,0.17,0,0])
 		piecew=piecewise_linear(x,*coef)
 		print(coef)
-		#[p0,p1] = breakpoint, [p2,p3] = slopes
 		plt.plot(x, piecew, label="Piecewise linear")
 
 
@@ -261,14 +267,17 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	if fit==0:
 		datain = RealData(amp_p, trueEn, sx=err_p)
 		coef_fit, res_var, sum_square = odr_polyfit(datain,1)
+		ndof= sum_square/res_var
 		fn="m*x + b"
 	elif fit==1:
 		datain = RealData(amp_p, trueEn, sx=err_p)
 		coef_fit, res_var, sum_square = odr_polyfit(datain,2)
+		ndof= sum_square/res_var
 		fn="a * x *x + b*x + c"
 	elif fit==2:
 		datain = RealData(amp_p, trueEn, sx=err_p)
 		coef_fit, res_var, sum_square = odr_polyfit(datain,3)
+		ndof= sum_square/res_var
 		fn="a*x*x*x + b*x*x + c*x + d"
 	elif fit==3:
 		datain = RealData(amp_p, trueEn, sx=err_p)
@@ -278,16 +287,17 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 		coef_fit=out_sqrt.beta
 		sum_square=out_sqrt.sum_square
 		res_var=out_sqrt.res_var
+		ndof= sum_square/res_var
 		fn="A*np.sqrt(x)+B"
 	elif fit==4:
-		coef_fit = interpolate.splrep(amp_p_sorted, trueEn_sorted, w=err_p_sorted, k=1)
-		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, coef_fit)
+		coef_fit = interpolate.splrep(amp_p_sorted2, trueEn_sorted2, w=err_p_sorted2, k=1)
+		sum_square=getSumSq(trueEn_sorted2, amp_p_sorted2, err_p_sorted2, coef_fit)
 		ndof = float(len(trueEn)-3)#loose 3 dof for continuinty requirements
 		res_var = sum_square/ndof
 		fn="spline, k=1"
 	elif fit==5:
-		coef_fit = interpolate.splrep(amp_p_sorted, trueEn_sorted, w=err_p_sorted)
-		sum_square=getSumSq(trueEn_sorted, amp_p_sorted, err_p_sorted, coef_fit)
+		coef_fit = interpolate.splrep(amp_p_sorted2, trueEn_sorted2, w=err_p_sorted2)
+		sum_square=getSumSq(trueEn_sorted2, amp_p_sorted2, err_p_sorted2, coef_fit)
 		ndof = np.float64(len(trueEn)-3)#loose 3 dof for continuinty requirements
 		res_var = sum_square/ndof
 		print(f"{sum_square}/{ndof} = {res_var}")
@@ -343,12 +353,12 @@ if fitSpectra:
 	i=0
 	for file in fileList:
 		settings=[file, nameList[i], pix, energyList[i], savePlots]
-		popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fitLow=fitLow_p[i], fitHigh=fitHigh_p[i])
-		enResFitting.printParams(settings, integ, popt, enRes, pcov)
+		popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fitLow=fitLow_p[i], fitHigh=fitHigh_p[i], savedir=dataDir)
+		enResFitting.printParams(settings, integ, popt, enRes, pcov, savedir=dataDir)
 		#integral argument = integral bin size (in V)
 		#AMANDA - N calculation is failing for integral
-		poptI, enResI, pcovI, integI = enResFitting.enResPlot(settings, fitLow=fitLow_i[i], fitHigh=fitHigh_i[i], integral=True)
-		enResFitting.printParams(settings, integI, poptI, enResI, pcovI, integral=True)
+		poptI, enResI, pcovI, integI = enResFitting.enResPlot(settings, fitLow=fitLow_i[i], fitHigh=fitHigh_i[i], integral=True, savedir=dataDir)
+		enResFitting.printParams(settings, integI, poptI, enResI, pcovI, integral=True, savedir=dataDir)
 		enResArr1.append([enRes,enResI])
 		muArr1.append([popt[1],poptI[1]])
 		sigmaArr1.append([popt[2],poptI[2]])
@@ -363,10 +373,10 @@ if fitSpectra:
 	i=0
 	for file in edgeFileList:
 		settings=[file, edgeNameList[i], pix, edgeEnergyList[i],savePlots]
-		popt, enRes, pcov, integ= enResFitting.enResPlot(settings,edge=True,fitLow=edgeFitLow_p[i], fitHigh=edgeFitHigh_p[i])
-		enResFitting.printParams(settings, integ, popt, enRes, pcov, edge=True)
-		poptI, enResI, pcovI, integI = enResFitting.enResPlot(settings,edge=True,fitLow=edgeFitLow_i[i], fitHigh=edgeFitHigh_i[i],integral=20)
-		enResFitting.printParams(settings, integI, poptI, enResI, pcovI, integral=True, edge=True)
+		popt, enRes, pcov, integ= enResFitting.enResPlot(settings,edge=True,fitLow=edgeFitLow_p[i], fitHigh=edgeFitHigh_p[i], savedir=dataDir)
+		enResFitting.printParams(settings, integ, popt, enRes, pcov, edge=True, savedir=dataDir)
+		poptI, enResI, pcovI, integI = enResFitting.enResPlot(settings,edge=True,fitLow=edgeFitLow_i[i], fitHigh=edgeFitHigh_i[i],integral=20, savedir=dataDir)
+		enResFitting.printParams(settings, integI, poptI, enResI, pcovI, integral=True, edge=True, savedir=dataDir)
 		enResArr1.append([enRes,enResI])
 		muArr1.append([popt[2],poptI[2]])
 		sigmaArr1.append([popt[3],poptI[3]])
@@ -383,7 +393,6 @@ else: #if spectra have been fit before, pull out values from txt files
 #calculate error
 #errArr1 = enResFitting.calcError(sigmaArr1, nArr1)
 errArr1 = muErrArr1
-print(errArr1)
 
 #use fit mean of measured peaks and associated error to create calibration curve
 coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]", saveDir)
@@ -395,7 +404,7 @@ coef_p = energyCalibFit(energyList, muArr1, errArr1, "Fit Mean [V]", saveDir)
 if pix==1:
 	file="110421_amp1/Americium_480min_combined.h5py"
 	settings=[homeDir+file, "Americium241-calib", 1, 59.54, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=50, norm=True)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=50)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 
 	file="102021_amp1/cadmium109_45min.h5py"
@@ -409,33 +418,33 @@ if pix==1:
 	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=80)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)		
 
-
+	
 	file="110821_amp1/barium133_combined_65min.h5py"
 	settings=[homeDir+file,  "Barium133-calib", 1, 30.97, savePlots]
 	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=20, fitHigh=45)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)		
-		
+	
 
 	file="102021_amp1/cobalt57_14h.h5py"
 	settings=[homeDir+file,  "Cobalt57-calib", 1, 122.06, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=110, fitHigh=130)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=90, fitHigh=130)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)	
 	
 	file="102021_amp1/cobalt57_14h.h5py"
 	settings=[homeDir+file,  "Cobalt57-calib", 1, 14.41, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=10, fitHigh=30)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitHigh=30)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)	
 
 
 	file="102021_amp1/cobalt57_14h.h5py"
 	settings=[homeDir+file,  "Cobalt57-edge-calib", 1, 39.46, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,edge=True, fitLow=35, fitHigh=50)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,edge=True, fitLow=35, fitHigh=60)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov, edge=True)
 			
 elif pix==2:
 	file="111521_amp2/overnight_Americium241_960min.h5py"
 	settings=[homeDir+file, "Americium241-calib", 2, 59.54, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=52, fitHigh=65)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=52, fitHigh=80)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 	
 	file="111621_amp2/day_Cadmium109_300min.h5py"
@@ -450,12 +459,20 @@ elif pix==2:
 		
 	file="111221_amp2/weekend_Cobalt57_4020min.h5py"
 	settings=[homeDir+file,  "Cobalt57-calib", 2, 14.41, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitHigh=20)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitHigh=30)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 		
+	file="120221_amp2/calib_barium133_180min.h5py"
+	settings=[homeDir+file,  "Barium133-calib", 2, 30.97, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=20, fitHigh=45)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov)			
 		
-		
-		
+	file="120221_amp2/calib_cadmium190_1080min.h5py"
+	settings=[homeDir+file,  "Cadmium109-calib", 2, 88.03, savePlots]
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=80)
+	enResFitting.printParams(settings, -1, popt, enRes, pcov)			
+
+
 		
 		
 		
