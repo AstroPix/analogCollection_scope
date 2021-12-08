@@ -81,11 +81,11 @@ dataDir2="/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp2_pe
 
 	
 #raw data
-energyList1, muArr1, sigmaArr1, nArr1, enResArr1 = enResFitting.getVals_fromTxt(dataDir1+"fitSpectra/")
-errArr1= enResFitting.calcError(sigmaArr1, nArr1)
+energyList1, muArr1, sigmaArr1, nArr1, enResArr1, errArr1 = enResFitting.getVals_fromTxt(dataDir1+"fitSpectra/")
+#errArr1= enResFitting.calcError(sigmaArr1, nArr1)
 
-energyList2, muArr2, sigmaArr2, nArr2, enResArr2 = enResFitting.getVals_fromTxt(dataDir2+"fitSpectra/")
-errArr2= enResFitting.calcError(sigmaArr2, nArr2)
+energyList2, muArr2, sigmaArr2, nArr2, enResArr2, errArr2 = enResFitting.getVals_fromTxt(dataDir2+"fitSpectra/")
+#errArr2= enResFitting.calcError(sigmaArr2, nArr2)
 
 #plot energy resolution 
 enres1mu=flattenIn(enResArr1)
@@ -116,8 +116,8 @@ plt.clf()
 
 
 #calibrated data
-#dataDir1="/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks_noiseIncl/"
-#dataDir2="/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp2_peaks_noiseIncl/"
+dataDir1="/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/amp1Calib/"
+dataDir2="/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp2_peaks/amp2Calib/"
 
 muEnResPlot(dataDir1, "Cad", 1, savePlots)
 muEnResPlot(dataDir2, "Cad", 2, savePlots)
