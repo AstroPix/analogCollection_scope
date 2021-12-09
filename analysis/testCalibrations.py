@@ -29,6 +29,7 @@ def muEnResPlot(dir,ele, pix, savePlots):
 	plt.title(f"{ele} {en} keV line - amp{pix}")
 	saveto=dir+ele+"_amp"+str(pix)+"_muEnRes_testFits.pdf"
 	plt.savefig(saveto) if savePlots else plt.show()
+	plt.clf()
 
 def getChi2(indir):
 	chiArr, ndofArr = [],[]
@@ -68,6 +69,24 @@ def chi2RatioPlot(dir, ele, pix, savePlots):
 	ax2.tick_params(axis='y', labelcolor=color)
 	plt.title(f"{ele} {en} keV line - amp{pix}")
 	saveto=dir+ele+"_amp"+str(pix)+"_chi2Ratio_testFits.pdf"
+	plt.savefig(saveto) if savePlots else plt.show()
+	plt.clf()
+	
+def sigmaPlot(dir, ele, pix, savePlots):
+
+	en, mu, sig, n, enRes, fits = enResFitting.getCalibVals_fromTxt(dir, ele)
+	
+	lim={22.16:2.13, 59.54:3.49, 122.06:5} #sigma values necessary to achieve proposal sensitivity
+	
+	fig, ax1 = plt.subplots()
+	color = 'tab:blue'
+	plt.xlabel('Fit function')
+	plt.ylabel('Sigma [keV]')
+	plt.plot(fits,sig,'o',color=color)
+	plt.axhline(y=lim[en], color='black', linestyle='-')
+	ax1.tick_params(axis='y', labelcolor=color)
+	plt.title(f"{ele} {en} keV line - amp{pix}")
+	saveto=dir+ele+"_amp"+str(pix)+"_sigma_testFits.pdf"
 	plt.savefig(saveto) if savePlots else plt.show()
 	plt.clf()
 
@@ -128,3 +147,8 @@ chi2RatioPlot(dataDir1, "Cad", 1, savePlots)
 chi2RatioPlot(dataDir2, "Cad", 2, savePlots)
 chi2RatioPlot(dataDir1, "Am", 1, savePlots)
 chi2RatioPlot(dataDir2, "Am", 2, savePlots)
+
+sigmaPlot(dataDir1, "Cad", 1, savePlots)
+sigmaPlot(dataDir2, "Cad", 2, savePlots)
+sigmaPlot(dataDir1, "Am", 1, savePlots)
+sigmaPlot(dataDir2, "Am", 2, savePlots)
