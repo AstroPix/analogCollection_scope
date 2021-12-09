@@ -182,7 +182,6 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 	#if calibrating, plug values into calibration function (unless value falls outside of calibration - then discard)
 	if fit>=0:
 		data=[float(coef(x)) for x in data if float(coef(x))>0]
-
 	
 	#Create arrays for binning based on scope resolution
 	xBinWidth=scaling[3]#YMULT Value
@@ -193,13 +192,7 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 	if integral:
 		xBinWidth=1 #[V*ns]
 	xMax=np.max(data)
-	#if integral>0:
-	#	xMin=np.min(data)
-	#else:
-	#	xMin=0
 	xMin=0
-	#if integral>0:
-	#	xBinWidth=integral
 	binEdges=np.arange(xMin,xMax+xBinWidth,xBinWidth)#use peakMax+xBinWidth to overshoot range and include all data
 	
 	#Create histogram of data

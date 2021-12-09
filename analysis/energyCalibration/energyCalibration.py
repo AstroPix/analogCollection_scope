@@ -192,14 +192,6 @@ def energyCalibFit(trueEn, data, err, dataName, saveto):
 	err_p_sorted = [x for _, x in sorted(zip(trueEn, err_p), key=lambda pair: pair[0])]
 	amp_i_sorted = [x for _, x in sorted(zip(trueEn, amp_i), key=lambda pair: pair[0])]
 	err_i_sorted = [x for _, x in sorted(zip(trueEn, err_i), key=lambda pair: pair[0])]
-	"""
-	#sort by measurement - should be the same
-	trueEn_sorted2 = [x for _, x in sorted(zip(amp_p, trueEn), key=lambda pair: pair[0])]
-	amp_p_sorted2 = [x for _, x in sorted(zip(trueEn, amp_p), key=lambda pair: pair[1])]
-	err_p_sorted2 = [x for _, x in sorted(zip(amp_p, err_p), key=lambda pair: pair[0])]
-	amp_i_sorted2 = [x for _, x in sorted(zip(trueEn, amp_i), key=lambda pair: pair[1])]
-	err_i_sorted2 = [x for _, x in sorted(zip(amp_i, err_i), key=lambda pair: pair[0])]
-	"""
 
 	
 	#Plot data and fit functions
@@ -400,7 +392,7 @@ if pix==1:
 
 	file="102821_amp1/cadmium109_16h.h5py"
 	settings=[homeDir+file,  "Cadmium109-calib", 1, 88.03, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=80)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=60)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)		
 
 
@@ -429,7 +421,7 @@ if pix==1:
 elif pix==2:
 	file="111521_amp2/overnight_Americium241_960min.h5py"
 	settings=[homeDir+file, "Americium241-calib", 2, 59.54, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=52, fitHigh=80)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,fit=fit,coef=coef_p,fitLow=48)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 	
 	file="111621_amp2/day_Cadmium109_300min.h5py"
@@ -439,7 +431,7 @@ elif pix==2:
 	
 	file="111221_amp2/weekend_Cobalt57_4020min.h5py"
 	settings=[homeDir+file,  "Cobalt57-calib", 2, 122.06, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=110, fitHigh=135)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=100, fitHigh=140)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 		
 	file="111221_amp2/weekend_Cobalt57_4020min.h5py"
@@ -454,7 +446,7 @@ elif pix==2:
 		
 	file="120221_amp2/calib_cadmium190_1080min.h5py"
 	settings=[homeDir+file,  "Cadmium109-calib", 2, 88.03, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=80)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=50)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)			
 
 
