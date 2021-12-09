@@ -94,7 +94,7 @@ def sigmaPlot(dir, ele, pix, savePlots):
 
 ############################################################################################
 ############################################################################################
-savePlots=True
+savePlots=False
 dataDir1="/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/"
 dataDir2="/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp2_peaks/"
 
@@ -116,6 +116,20 @@ plt.ylabel(f"Energy Resolution [%]")
 plt.legend(loc="best")
 plt.grid()
 plt.savefig(f"{dataDir1}peaks_comparePixels_enRes.pdf") if savePlots else plt.show()
+plt.clf()
+
+#plot components of energy calibration - mu and sigma
+sig1=flattenIn(sigmaArr1)
+mu1=flattenIn(muArr1)
+plt.plot(mu1,sig1, 'o', label="Amp1")
+sig2=flattenIn(sigmaArr2)
+mu2=flattenIn(muArr2)
+plt.plot(mu2,sig2, 'or', label="Amp2")
+plt.xlabel("Measured energy [V]")
+plt.ylabel(f"Measured sigma [V]")	
+plt.legend(loc="best")
+plt.grid()
+plt.savefig(f"{dataDir1}peaks_comparePixels_muVsSig.pdf") if savePlots else plt.show()
 plt.clf()
 
 #plot calibration curves
