@@ -46,6 +46,7 @@ def sqrtFit(x,A,B,mu):
 def piecewise_linear(x, x0, y0, k1, k2):
 	return np.piecewise(x, [x < x0, x>=x0], [lambda x:k1*x + y0-k1*x0, lambda x:k2*x + y0-k2*x0])
 	
+"""
 #fit functions for ODR	
 def lin_odr(p,x):
 	m,b=p
@@ -77,6 +78,7 @@ def odr_polyfit(fitdata, deg):
 	res_var=out.res_var
 	sum_square=out.sum_square
 	return coef, res_var, sum_square
+"""
 	
 def getSumSq(trueEn, voltage, err, fn):
 	sum_square=0
@@ -135,7 +137,6 @@ def getFiles(amp):
 	fileList=fixFileList(fileList)
 	return fileList, energyList, nameList, fitLow_p, fitLow_i, fitHigh_p, fitHigh_i
 
-		
 def getEdgeFiles(amp):
 	os.chdir(sys.path[0])
 	if amp==1:
@@ -386,7 +387,8 @@ if pix==1:
 
 	file="102021_amp1/cadmium109_45min.h5py"
 	settings=[homeDir+file,  "Cadmium109-calib", 1, 22.16, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=15, fitHigh=30)
+	#popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=15, fitHigh=30)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)
 
 
@@ -398,18 +400,19 @@ if pix==1:
 
 	file="110821_amp1/barium133_combined_65min.h5py"
 	settings=[homeDir+file,  "Barium133-calib", 1, 30.97, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=20, fitHigh=45)
+	#popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=20, fitHigh=45)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)		
 	
 
 	file="102021_amp1/cobalt57_14h.h5py"
 	settings=[homeDir+file,  "Cobalt57-calib", 1, 122.06, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=90, fitHigh=130)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit,fitLow=98,binSize=1)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)	
 	
 	file="102021_amp1/cobalt57_14h.h5py"
 	settings=[homeDir+file,  "Cobalt57-calib", 1, 14.41, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitHigh=30)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)	
 
 

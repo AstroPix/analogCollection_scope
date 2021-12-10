@@ -97,8 +97,7 @@ def getGausRange(x,y,errs,popt):
 	
 	return x[bin_3sigN:bin_3sig],y[bin_3sigN:bin_3sig],errs[bin_3sigN:bin_3sig]
  
-#DOES NOT WORK WELL
-#favors "poor fit" by eye because less bins in chi2 calculation lead to smaller values naturally
+
 def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 	#iterate on fit until max iterations or chi2/ndof<1 (fit within 1 sigma)
 	errs=np.sqrt(y)
@@ -110,16 +109,22 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 	popt_best=[0,0,0]
 	pcov_best=0
 
+
 	i=0
 	while i<maxIt:
 		print("Fit iteration "+str(i))
-		if (high-low<5):
+		if (high-low<3):
 			#too small a range to fit
 			print("Too small a range to fit")
 			break
 		else:
-			popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], p0=p01, bounds=(0,np.inf), maxfev=8000, absolute_sigma=True)
-			#popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], sigma=errs[low:high], p0=p01, bounds=(0,np.inf), maxfev=8000, absolute_sigma=True)
+			try:
+				#popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], p0=p01, bounds=(0,np.inf), maxfev=8000, absolute_sigma=True)
+				popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], sigma=errs[low:high], p0=p01, bounds=(0,np.inf), maxfev=8000, absolute_sigma=True)
+			except RuntimeError: #fit could not converge
+				p01[-1]=p01[-1]/2 #make sigma guess smaller
+				#popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], p0=p01, bounds=(0,np.inf), maxfev=8000, absolute_sigma=True)
+				popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], sigma=errs[low:high], p0=p01, bounds=(0,np.inf), maxfev=8000, absolute_sigma=True)
 			x1,y1,err1=getGausRange(x,y,errs,popt)
 			TS = calc_chisquare(y1, err1, Gauss(x1,*popt))
 			NDF = len(y1) - len(popt)
@@ -130,6 +135,7 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 			pcov_best=pcov
 			goodness_last=goodness
 			p01=popt
+			print(p01)
 			#tighten fit range
 			low+=2
 			high-=2
@@ -137,7 +143,7 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 		else:
 			#fit getting worse
 			break
-	
+
 	return popt_best, pcov_best
 
 
@@ -146,7 +152,7 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 #Can fit pulse integral with optional integral input
 #Can fit Compton Edge with integrated Gaussian with optional edge input
 #Can calibrate measured signal to keV using calibration curve and fit calibrated spectrum with optional edge and fit inputs
-def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, dataset='run1', fit=-1, coef=0, savedir=None):
+def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, dataset='run1', fit=-1, coef=0, savedir=None, binSize=0):
 	#Define inputs
 	file=settings[0]
 	title=settings[1]
@@ -184,13 +190,16 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 		data=[float(coef(x)) for x in data if float(coef(x))>0]
 	
 	#Create arrays for binning based on scope resolution
-	xBinWidth=scaling[3]#YMULT Value
-	if xBinWidth<1e-5: #shouldn't be - failsafe
-		xBinWidth=0.002
-	if fit>-1:
-		xBinWidth=0.5 #0.5 keV bins for calibrated data
-	if integral:
-		xBinWidth=1 #[V*ns]
+	if binSize>0:
+		xBinWidth=binSize
+	else:
+		xBinWidth=scaling[3]#YMULT Value
+		if xBinWidth<1e-5: #shouldn't be - failsafe
+			xBinWidth=0.002
+		if fit>-1:
+			xBinWidth=0.5 #0.5 keV bins for calibrated data by default
+		if integral:
+			xBinWidth=1 #[V*ns]
 	xMax=np.max(data)
 	xMin=0
 	binEdges=np.arange(xMin,xMax+xBinWidth,xBinWidth)#use peakMax+xBinWidth to overshoot range and include all data
@@ -206,20 +215,22 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 	binCenters=hist[1]+xBinWidth/2
 	binCenters=binCenters[:-1]
 
-	#Set fit range
+	#Set fit range from inputs - coarse
 	low_i,high_i=getArrayIndex(binCenters,fitLow,fitHigh)
 	
 	#Set up fit with guesses for p01: [Amplitude, Mu, Sigma]
-	muGuess=np.mean(data)
+	#muGuess=np.mean(data)
+	muGuess_i=np.argmax(ydata[low_i:high_i])+low_i
+	muGuess=binCenters[muGuess_i]
 	if muGuess>fitHigh or muGuess<fitLow:
 		muGuess=binCenters[low_i]+(binCenters[high_i]-binCenters[low_i])/2.
 	ampGuess=ydata[low_i:high_i].max()
-	sigGuess=muGuess/2.
+	sigGuess=muGuess/10.
 	if edge:
 		p01 = [ampGuess, ampGuess, muGuess, sigGuess]
 	else:
 		p01 = [ampGuess, muGuess, sigGuess]
-	
+		
 	#Fit histogram over desired range
 	if edge:
 		popt, pcov = curve_fit(Edge, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=errs[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
@@ -227,17 +238,20 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 		#Calculate N (events within 2sigma of mean)
 		integ=scipy.integrate.quad(Edge, -2*Sigma, 2*Sigma, args=(Amp1,Amp2,Mu,Sigma))
 		#returns integral and uncertainty on calculation - only return integral value
-	else:	
-		#AMANDA - revisit with iterative fit
-		try:
-			popt, pcov = iterativeFit(Gauss, p01, binCenters, ydata, low_i, high_i)
-			#popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=errs[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
-			#range is set with low_i and high_i index values for input arrays
-			#bounds keeps all parameters positive
-		except RuntimeError: #fit could not converge
-			sigGuess=sum(ydata*(binCenters-muGuess)**2)
-			p01 = [ampGuess, muGuess, sigGuess]
-			popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=errs[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
+	else:		
+		#Refine fit range
+		if fitLow<muGuess-sigGuess:#if too much low data below peak
+			fitLow=muGuess-sigGuess
+		if ((fitHigh>muGuess+sigGuess) or (high_i==len(binCenters)-1)):#if too much high data above peak or if bound goes to np.inf (end of dataset)
+			fitHigh=muGuess+sigGuess
+		#Recalculate indices of bounds
+		low_i,high_i=getArrayIndex(binCenters,fitLow,fitHigh)
+		#prevent artifically small range if peak on the edge of the distribution
+		if high_i-low_i<4:
+			high_i+=2
+			low_i-=2
+
+		popt, pcov = iterativeFit(Gauss, p01, binCenters, ydata, low_i, high_i)
 		(Amp, Mu, Sigma)=popt
 		#Calculate N (events under fit)
 		integ=scipy.integrate.quad(Gauss, -np.inf, np.inf, args=(Amp,Mu,Sigma))
