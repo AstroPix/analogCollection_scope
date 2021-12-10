@@ -46,39 +46,6 @@ def sqrtFit(x,A,B,mu):
 def piecewise_linear(x, x0, y0, k1, k2):
 	return np.piecewise(x, [x < x0, x>=x0], [lambda x:k1*x + y0-k1*x0, lambda x:k2*x + y0-k2*x0])
 	
-"""
-#fit functions for ODR	
-def lin_odr(p,x):
-	m,b=p
-	return m*x + b
-def quad_odr(p, x):
-	a, b, c = p
-	return a * x *x + b*x + c
-def tri_odr(p,x):
-	a,b,c,d = p
-	return a*x*x*x + b*x*x + c*x + d	
-def sqrt_odr(p,x):
-	A,B=p
-	return A*np.sqrt(x)+B
-	
-def odr_polyfit(fitdata, deg):
-	if deg==1:
-		mod =  Model(lin_odr)
-	elif deg==2:
-		mod = Model(quad_odr)
-	elif deg==3:
-		mod = Model(tri_odr)
-	else:
-		printf("Not possible - choose degree 1, 2, or 3")
-		#AMANDA - better break
-	
-	odrfit = ODR(fitdata,mod,[1e-8 for x in range(deg+1)])		
-	out=odrfit.run()
-	coef=out.beta
-	res_var=out.res_var
-	sum_square=out.sum_square
-	return coef, res_var, sum_square
-"""
 	
 def getSumSq(trueEn, voltage, err, fn):
 	sum_square=0
@@ -124,12 +91,12 @@ def getFiles(amp):
 		energyList=[14.41, 122.06, 59.54, 22.16, 88.03, 30.97]
 		nameList=["Cobalt57","Cobalt57", "Americium241", "Cadmium109", "Cadmium109","Barium133"]
 		#fine-tune the range so that individual peaks are picked out
-		fitLow_p=[0.03,0.3,0.18,0.06,0.25,0.1]
+		fitLow_p=[0.03,0.25,0.18,0.06,0.25,0.1]
 		#fitLow_i=[0,450,200,0,75]
 		fitLow_i=[0,45,20,2,33,4]
-		fitHigh_p=[0.08,0.33,0.24,0.12,0.28,0.15]
+		fitHigh_p=[0.08,0.35,0.24,0.12,0.28,0.15]
 		#fitHigh_i=[100,1000,300,200,175]
-		fitHigh_i=[100,60,30,15,43,20]
+		fitHigh_i=[20,60,30,15,43,20]
 	else:
 		print("Choose amp1 or amp2")
 		fileList,energyList,nameList,fitLow_p,fitLow_i, fitHigh_p, fitHigh_i = [],[],[],[],[],[],[]

@@ -248,9 +248,13 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 		low_i,high_i=getArrayIndex(binCenters,fitLow,fitHigh)
 		#prevent artifically small range if peak on the edge of the distribution
 		if high_i-low_i<4:
-			high_i+=2
-			low_i-=2
-
+			high_i+=4
+			low_i-=4
+			#failsafe against going negative or out of bounds
+			if low_i<0:
+				low_i=0
+			if high_i>len(binCenters)-1:
+				high_i=len(binCenters)-1
 		popt, pcov = iterativeFit(Gauss, p01, binCenters, ydata, low_i, high_i)
 		(Amp, Mu, Sigma)=popt
 		#Calculate N (events under fit)
