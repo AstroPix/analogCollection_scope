@@ -61,7 +61,7 @@ def plotTraces():
 		plt.xlabel( "time ($\mu$s)" )
 		plt.ylabel("trace - baseline [V]")
 		plt.title(f"0.05V Injection {name}")
-		plt.savefig(f"{homeDir}/102221_0.05Vinj{name}_traces.pdf")
+		plt.savefig(f"{homeDir}/noise_gain_threshold/102221_0.05Vinj{name}_traces.pdf")
 		plt.clf()
 		
 
@@ -97,7 +97,7 @@ def plotTraces_compare(fileName, dataset,labels, xrange=0.004, ratioBool=True):
 			axs[1].plot(time*1e6,ratio)
 			plt.setp(axs[1],ylabel=f"Ratio {labels[1]}/{labels[2]}")
 		#plt.show()
-		plt.savefig(f"{homeDir}/102221_amp{pixel}_0.05Vinj_traces_compare{labels[0]}.pdf")
+		plt.savefig(f"{homeDir}/noise_gain_threshold/102221_amp{pixel}_0.05Vinj_traces_compare{labels[0]}.pdf")
 		plt.clf()
 	
 		labelIndex=1
@@ -111,7 +111,7 @@ def plotTraces_compare(fileName, dataset,labels, xrange=0.004, ratioBool=True):
 		plt.ylabel("counts")
 		plt.legend(loc="best")
 		#plt.show()
-		plt.savefig(f"{homeDir}/102221_amp{pixel}_0.05Vinj_noiseRMS_{labels[0]}.pdf")
+		plt.savefig(f"{homeDir}/noise_gain_threshold/102221_amp{pixel}_0.05Vinj_noiseRMS_{labels[0]}.pdf")
 		plt.clf()
 			
 		
