@@ -378,7 +378,7 @@ def printParams(settings, integ, popt, en_res, pcov, integral=False, edge=False,
 		
 		
 def getVals_fromTxt(inDir):		
-	energyList, muArr1, sigmaArr1, nArr1, enResArr1, muErrArr1 = [],[],[],[],[],[]
+	energyList, muArr1, sigmaArr1, nArr1, enResArr1, muErrArr1, sigErrArr1, enresErrArr1 = [],[],[],[],[],[],[],[]
 
 	os.chdir(inDir)
 	peakFiles = glob.glob('*peaks*.txt')
@@ -395,6 +395,8 @@ def getVals_fromTxt(inDir):
 		nArr1.append([float(lines[3].split(' = ')[-1])])
 		enResArr1.append([float(lines[4].split(' = ')[-1][:-2])])#eliminate % sign at the end
 		muErrArr1.append([float(lines[6+plus].split(' = ')[-1])])
+		sigErrArr1.append([float(lines[7+plus].split(' = ')[-1])])
+		enresErrArr1.append([float(lines[8+plus].split(' = ')[-1][:-2])])#eliminate % sign at the end
 		
 	intFiles = glob.glob('*integral*.txt')
 	for filename in intFiles:
@@ -410,24 +412,32 @@ def getVals_fromTxt(inDir):
 		nArr1[energyIndex].append(float(lines[3].split(' = ')[-1]))
 		enResArr1[energyIndex].append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
 		muErrArr1[energyIndex].append(float(lines[6+plus].split(' = ')[-1]))
+		sigErrArr1[energyIndex].append(float(lines[7+plus].split(' = ')[-1]))
+		enresErrArr1[energyIndex].append(float(lines[8+plus].split(' = ')[-1][:-2]))#eliminate % sign at the end
 
-	return energyList, muArr1, sigmaArr1, nArr1, enResArr1, muErrArr1
+	return energyList, muArr1, sigmaArr1, nArr1, enResArr1, muErrArr1, sigErrArr1, enresErrArr1
 	
 def getCalibVals_fromTxt(inDir, ele):		
-	energyList, muArr1, sigmaArr1, nArr1, enResArr1 = [],[],[],[],[]
+	energyList, muArr1, sigmaArr1, nArr1, enResArr1, muErr, sigErr, enresErr = [],[],[],[],[],[],[],[]
 	fits=['linear','quad','tri','sqrt','spline1','spline3','piecewise']
 
 	for fit in fits:
+		plus=0
 		os.chdir(inDir+fit+'/')
 		peakFile = glob.glob('*'+ele+'*peaks*.txt') #returns array with length 1
 		energyList.append(float(peakFile[0].split('_')[1][:-4]))
+		if "edge" in peakFile[0]:
+			plus=1
 		openFile = open(peakFile[0],'r')
 		lines=openFile.readlines()
 		muArr1.append(float(lines[1].split(' = ')[-1]))
 		sigmaArr1.append(float(lines[2].split(' = ')[-1]))
 		nArr1.append(float(lines[3].split(' = ')[-1]))
 		enResArr1.append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
-	
+		muErr.append(float(lines[6+plus].split(' = ')[-1]))
+		sigErr.append(float(lines[7+plus].split(' = ')[-1]))
+		enresErr.append(float(lines[8+plus].split(' = ')[-1][:-2]))#eliminate % sign at the end
+
 		"""
 		#when integral-calibrated plots are made
 		muArr1.append([float(lines[1].split(' = ')[-1])])
@@ -448,7 +458,7 @@ def getCalibVals_fromTxt(inDir, ele):
 		enResArr1[energyIndex].append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
 		"""
 	
-	return energyList[0], muArr1, sigmaArr1, nArr1, enResArr1, fits
+	return energyList[0], muArr1, sigmaArr1, nArr1, enResArr1, fits, muErr, sigErr, enresErr
 		
 	
 def calcError(sigmaArr, nArr):	
