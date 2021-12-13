@@ -367,8 +367,7 @@ if pix==1:
 
 	file="110821_amp1/barium133_combined_65min.h5py"
 	settings=[homeDir+file,  "Barium133-calib", 1, 30.97, savePlots]
-	#popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=20, fitHigh=45)
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, binSize=1)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)		
 	
 
@@ -411,12 +410,12 @@ elif pix==2:
 		
 	file="120221_amp2/calib_barium133_180min.h5py"
 	settings=[homeDir+file,  "Barium133-calib", 2, 30.97, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=20, fitHigh=45)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=20, fitHigh=45, binSize=1)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)			
 		
 	file="120221_amp2/calib_cadmium190_1080min.h5py"
 	settings=[homeDir+file,  "Cadmium109-calib", 2, 88.03, savePlots]
-	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=50)
+	popt, enRes, pcov, integ = enResFitting.enResPlot(settings,coef=coef_p,fit=fit, fitLow=60, binSize=1)
 	enResFitting.printParams(settings, -1, popt, enRes, pcov)			
 
 
