@@ -128,14 +128,15 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 			x1,y1,err1=getGausRange(x,y,errs,popt)
 			TS = calc_chisquare(y1, err1, Gauss(x1,*popt))
 			NDF = len(y1) - len(popt)
+			if NDF==0:
+				NDF=1e-8
 			goodness = TS/float(NDF)
-			print("chisquare/NDF = {0:.2f} / {1:d} = {2:.2f}".format(TS, NDF, TS / float(NDF)))
+			print("chisquare/NDF = {0:.2f} / {1:f} = {2:.2f}".format(TS, NDF, TS / float(NDF)))
 		if goodness<goodness_last:
 			popt_best=popt
 			pcov_best=pcov
 			goodness_last=goodness
 			p01=popt
-			print(p01)
 			#tighten fit range
 			low+=2
 			high-=2
@@ -159,6 +160,7 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 	pixel=settings[2]
 	energy=settings[3]
 	savePlots=settings[4]
+	chip=settings[5]
 
 	#Distinguish between peaks and integral
 	if integral:
@@ -174,10 +176,12 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 	
 	scaling=f[dsName+'_scaling']
 	#remove noise - neglect peak heights with <20(30) mV for amp1(amp2)
-	if pixel==1:
-		noiseCut=0.02
-	elif pixel==2:
+	if pixel==2 and chip==3:
 		noiseCut=0.03
+	elif pixel==1 and chip==4:
+		noiseCut=0.01
+	else:
+		noiseCut=0.02
 	if not integral:
 		data=[y for y in data if y > noiseCut]
 	else:
