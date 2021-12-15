@@ -2,30 +2,33 @@
 
 #notable directories
 homeDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/
-saveDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/amp1Calib/spline3/
+saveDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/chip003/amp1_peaks/amp1Calib/tri/
 dataDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/fitSpectra/
 
 #input data files
 #if full path is not given, homeDir is assumed
 #if no files used (ex: no edge files), pass empty file as argument
-input1 = amp1_inputs_chip004.txt
+input1 = amp1_inputs.txt
 input1_edge = amp1_edge_inputs_chip004.txt
-input2 = amp2_inputs_chip004.txt
+input2 = amp2_inputs.txt
 input2_edge = amp2_edge_inputs_chip004.txt
 
 
 #Boolean run options
 # 0 is False, 1 is True
 #Saves plots in `saveDir` if True, displays plots if False
-savePlots = 1
+savePlots = 0
 #Fits all input spectra if true, reads fit parameter values from txt files in `dataDir` if False
-fitSpectra = 1
+fitSpectra = 0
+#Fit peak heights or integral value (scaled by scope resolution)
+#If traceInteg is true, use integral. If false, use peak height
+traceInteg = 1
 
 #Run options
 #Which pixel / amp being fit - Choose 1 or 2 
-pix = 1
+pix = 2
 #Which AstroPix chip - Choose 3 or 4
 chip = 4
 #Which fit function to use for calibration curve
 #fits: [0] linear, [1] quadratic, [2] 3rd deg poly, [3] sqrt, [4] 1deg spline, [5] 3deg spline, [6] piecewise linear
-fit = 5
+fit = 0

@@ -202,7 +202,7 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 			xBinWidth=0.002
 		if fit>-1:
 			xBinWidth=0.5 #0.5 keV bins for calibrated data by default
-		if integral:
+		if integral and fit==-1:
 			xBinWidth=1 #[V*ns]
 	xMax=np.max(data)
 	xMin=0
@@ -285,7 +285,7 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 	plt.legend(loc="best")
 	plt.title(f"Energy Resolution - {title}, pixel {pixel}")
 	plt.ylabel('Counts')
-	if integral:
+	if integral and fit==-1:
 		plt.xlabel('Integrated energy [V*ns]')
 	elif edge:
 		plt.title(f"Edge Fit - {title}, pixel {pixel}")
@@ -298,8 +298,10 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 
 	if savePlots:
 		#save figure
-		if fit>-1:
-			saveto=f"{getSaveto(savedir)}{title}{datain}_{energy}line_calibrated.pdf"
+		if fit>-1 and integral:
+			saveto=f"{getSaveto(savedir)}{title}{datain}_{energy}line_integralCalibrated.pdf"
+		elif fit>-1:
+			saveto=f"{getSaveto(savedir)}{title}{datain}_{energy}line_peakCalibrated.pdf"
 		elif edge:	
 			saveto=f"{getSaveto(savedir)}{title}{datain}EdgeFit_{energy}edge.pdf"
 		else:
@@ -311,11 +313,12 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 		
 	f.close()
 
-	return popt, enRes, pcov, integ[0]
+	#return popt, enRes, pcov, integ[0]
+	return popt, enRes, pcov
 		
 	
 #Calculate error on fit parameters, save in text file	
-def printParams(settings, integ, popt, en_res, pcov, integral=False, edge=False,savedir=None):
+def printParams(settings, popt, en_res, pcov, integral=False, edge=False,savedir=None):
 	#Define inputs
 	file=settings[0]
 	title=settings[1]
@@ -349,7 +352,7 @@ def printParams(settings, integ, popt, en_res, pcov, integral=False, edge=False,
 			saveto=f"{getSaveto(savedir)}{title}_{energy}line{datain}EnRes.txt"
 			k=open(saveto, "w")
 			k.write("Amplitude = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp, Mu, Sigma)+"\n")
-		k.write("Events under fit (N) = %0.3f" %(integ)+"\n")
+		k.write("\n")#keep empty line as place holder so code is backwards compatible - this line used to hold output of N calculation
 		k.write("Energy resolution = %0.2f" %(abs(en_res))+"%\n")
 		if edge:
 			k.write("Error in erfc amplitude = %0.3f \nError in erfc constant = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp1_err, Amp2_err, Mu_err, Sigma_err)+"\n")
@@ -369,39 +372,41 @@ def printParams(settings, integ, popt, en_res, pcov, integral=False, edge=False,
 	else:
 		if edge:
 			print("Amplitude erfc= %d Amplitude const = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp1, Amp2, Mu, Sigma))
-			print("Events under fit (N) = %0.3f" %(integ))
 			print("Energy resolution = %0.2f" %(abs(en_res)))
 			print("Error in erfc amplitude = %0.3f \nError in erfc constant = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp1_err, Amp2_err, Mu_err, Sigma_err))
 			print("Error in energy resolution = %0.5f"%(stdev_er))
 		else:
 			print("Amplitude = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp, Mu, Sigma))
-			print("Events under fit (N) = %0.3f" %(integ))
 			print("Energy resolution = %0.2f" %(abs(en_res)))
 			print("Error in amplitude = %0.3f \nError in mu = %0.6f \nError in sigma = %0.6f" %(Amp_err, Mu_err, Sigma_err))
 			print("Error in energy resolution = %0.5f"%(stdev_er))	
 		
 		
-def getVals_fromTxt(inDir):		
-	energyList, muArr1, sigmaArr1, nArr1, enResArr1, muErrArr1, sigErrArr1, enresErrArr1 = [],[],[],[],[],[],[],[]
+def getVals_fromTxt(inDir, integral):		
+	energyList, muArr1, sigmaArr1,enResArr1, muErrArr1, sigErrArr1, enresErrArr1 = [],[],[],[],[],[],[]
+
+	if integral:
+		dsName="integral"
+	else:
+		dsName="peaks"
 
 	os.chdir(inDir)
-	peakFiles = glob.glob('*peaks*.txt')
-	for filename in peakFiles:
+	files = glob.glob('*'+dsName+'*.txt')
+	for filename in files:
 		plus=0
 		energyList.append(float(filename.split('_')[1][:-4]))
 		if "edge" in filename:
 			plus=1
 		openFile=open(filename,'r')
 		lines=openFile.readlines()
-		muArr1.append([float(lines[1].split(' = ')[-1])])
-		mu=lines[1].split(' = ')[-1]
-		sigmaArr1.append([float(lines[2].split(' = ')[-1])])
-		nArr1.append([float(lines[3].split(' = ')[-1])])
-		enResArr1.append([float(lines[4].split(' = ')[-1][:-2])])#eliminate % sign at the end
-		muErrArr1.append([float(lines[6+plus].split(' = ')[-1])])
-		sigErrArr1.append([float(lines[7+plus].split(' = ')[-1])])
-		enresErrArr1.append([float(lines[8+plus].split(' = ')[-1][:-2])])#eliminate % sign at the end
-		
+		muArr1.append(float(lines[1].split(' = ')[-1]))
+		sigmaArr1.append(float(lines[2].split(' = ')[-1]))
+		enResArr1.append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
+		muErrArr1.append(float(lines[6+plus].split(' = ')[-1]))
+		sigErrArr1.append(float(lines[7+plus].split(' = ')[-1]))
+		enresErrArr1.append(float(lines[8+plus].split(' = ')[-1][:-2]))#eliminate % sign at the end
+	
+	"""
 	intFiles = glob.glob('*integral*.txt')
 	for filename in intFiles:
 		plus=0
@@ -413,30 +418,34 @@ def getVals_fromTxt(inDir):
 		lines=openFile.readlines()
 		muArr1[energyIndex].append(float(lines[1].split(' = ')[-1]))
 		sigmaArr1[energyIndex].append(float(lines[2].split(' = ')[-1]))
-		nArr1[energyIndex].append(float(lines[3].split(' = ')[-1]))
 		enResArr1[energyIndex].append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
 		muErrArr1[energyIndex].append(float(lines[6+plus].split(' = ')[-1]))
 		sigErrArr1[energyIndex].append(float(lines[7+plus].split(' = ')[-1]))
 		enresErrArr1[energyIndex].append(float(lines[8+plus].split(' = ')[-1][:-2]))#eliminate % sign at the end
+	"""
 
-	return energyList, muArr1, sigmaArr1, nArr1, enResArr1, muErrArr1, sigErrArr1, enresErrArr1
+	return energyList, muArr1, sigmaArr1, enResArr1, muErrArr1, sigErrArr1, enresErrArr1
 	
-def getCalibVals_fromTxt(inDir, ele):		
-	energyList, muArr1, sigmaArr1, nArr1, enResArr1, muErr, sigErr, enresErr = [],[],[],[],[],[],[],[]
+def getCalibVals_fromTxt(inDir, ele, integral):		
+	energyList, muArr1, sigmaArr1, enResArr1, muErr, sigErr, enresErr = [],[],[],[],[],[],[]
 	fits=['linear','quad','tri','sqrt','spline1','spline3','piecewise']
+
+	if integral:
+		dsName="integral"
+	else:
+		dsName="peaks"
 
 	for fit in fits:
 		plus=0
 		os.chdir(inDir+fit+'/')
-		peakFile = glob.glob('*'+ele+'*peaks*.txt') #returns array with length 1
-		energyList.append(float(peakFile[0].split('_')[1][:-4]))
-		if "edge" in peakFile[0]:
+		newfile = glob.glob('*'+ele+'*'+dsName+'*.txt') #returns array with length 1
+		energyList.append(float(newfile[0].split('_')[1][:-4]))
+		if "edge" in newfile[0]:
 			plus=1
-		openFile = open(peakFile[0],'r')
+		openFile = open(newfile[0],'r')
 		lines=openFile.readlines()
 		muArr1.append(float(lines[1].split(' = ')[-1]))
 		sigmaArr1.append(float(lines[2].split(' = ')[-1]))
-		nArr1.append(float(lines[3].split(' = ')[-1]))
 		enResArr1.append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
 		muErr.append(float(lines[6+plus].split(' = ')[-1]))
 		sigErr.append(float(lines[7+plus].split(' = ')[-1]))
@@ -462,7 +471,7 @@ def getCalibVals_fromTxt(inDir, ele):
 		enResArr1[energyIndex].append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
 		"""
 	
-	return energyList[0], muArr1, sigmaArr1, nArr1, enResArr1, fits, muErr, sigErr, enresErr
+	return energyList[0], muArr1, sigmaArr1, enResArr1, fits, muErr, sigErr, enresErr
 		
 	
 def calcError(sigmaArr, nArr):	
