@@ -382,7 +382,7 @@ def printParams(settings, popt, en_res, pcov, integral=False, edge=False,savedir
 			print("Error in energy resolution = %0.5f"%(stdev_er))	
 		
 		
-def getVals_fromTxt(inDir, integral):		
+def getVals_fromTxt(inDir, integral=False):		
 	energyList, muArr1, sigmaArr1,enResArr1, muErrArr1, sigErrArr1, enresErrArr1 = [],[],[],[],[],[],[]
 
 	if integral:
@@ -426,7 +426,7 @@ def getVals_fromTxt(inDir, integral):
 
 	return energyList, muArr1, sigmaArr1, enResArr1, muErrArr1, sigErrArr1, enresErrArr1
 	
-def getCalibVals_fromTxt(inDir, ele, integral):		
+def getCalibVals_fromTxt(inDir, ele, integral=False):		
 	energyList, muArr1, sigmaArr1, enResArr1, muErr, sigErr, enresErr = [],[],[],[],[],[],[]
 	fits=['linear','quad','tri','sqrt','spline1','spline3','piecewise']
 
