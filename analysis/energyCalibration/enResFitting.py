@@ -326,7 +326,7 @@ def enResPlot(settings, integral=False, edge=False, injection=False, fitLow=0, f
 		
 	
 #Calculate error on fit parameters, save in text file	
-def printParams(settings, popt, en_res, pcov, integral=False, edge=False,savedir=None):
+def printParams(settings, popt, en_res, pcov, integral=False, edge=False, injection=False, savedir=None):
 	#Define inputs
 	file=settings[0]
 	title=settings[1]
@@ -356,8 +356,12 @@ def printParams(settings, popt, en_res, pcov, integral=False, edge=False,savedir
 			saveto=f"{getSaveto(savedir)}{title}_{energy}edge{datain}EnRes.txt"
 			k=open(saveto, "w")
 			k.write("Amplitude erfc= %d Amplitude const = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp1, Amp2, Mu, Sigma)+"\n")
+		elif injection:
+			saveto=f"{getSaveto(savedir)}{title}_amp{pixel}{datain}EnRes.txt"
+			k=open(saveto, "w")
+			k.write("Amplitude = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp, Mu, Sigma)+"\n")
 		else:
-			saveto=f"{getSaveto(savedir)}{title}_{energy}line{datain}EnRes.txt"
+			saveto=f"{getSaveto(savedir)}{title}_{energy}V{datain}EnRes.txt"
 			k=open(saveto, "w")
 			k.write("Amplitude = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp, Mu, Sigma)+"\n")
 		k.write("\n")#keep empty line as place holder so code is backwards compatible - this line used to hold output of N calculation
@@ -370,9 +374,11 @@ def printParams(settings, popt, en_res, pcov, integral=False, edge=False,savedir
 		k.close()
 		#Display contents to terminal
 		if edge:
-			print(f"FIT FROM {title}_{energy}edge_{datain}")
+			print(f"FIT FROM {title}_{energy}edge{datain}")
+		elif injection:
+			print(f"FIT FROM {title}{datain}")
 		else:
-			print(f"FIT FROM {title}_{energy}line_{datain}")
+			print(f"FIT FROM {title}_{energy}line{datain}")
 		m = open(saveto, "r")
 		text = m.read()
 		print(text)
