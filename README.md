@@ -9,7 +9,7 @@ GOOD RUNS LIST
 CHIP003 - ALL DC COUPLING
 Chip003 Injection scans:
 102221_amp1
-102021_amp2
+102221_amp2
 
 Chip003 amp1 calibration:
 102021_amp1/cadmium109_45min.h5py

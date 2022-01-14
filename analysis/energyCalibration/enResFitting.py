@@ -110,6 +110,8 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 	pcov_best=0
 
 
+	p01=[70,0.24,0.02]
+
 	i=0
 	while i<maxIt:
 		print("Fit iteration "+str(i))
@@ -119,11 +121,10 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 			break
 		else:
 			try:
-				#popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], p0=p01, bounds=(0,np.inf), maxfev=8000, absolute_sigma=True)
 				popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], sigma=errs[low:high], p0=p01, bounds=(0,np.inf), maxfev=8000, absolute_sigma=True)
 			except RuntimeError: #fit could not converge
+				print("RuntimeError - retry with smaller sigma guess")
 				p01[-1]=p01[-1]/2 #make sigma guess smaller
-				#popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], p0=p01, bounds=(0,np.inf), maxfev=8000, absolute_sigma=True)
 				popt, pcov = curve_fit(fitFn, xdata=x[low:high], ydata=y[low:high], sigma=errs[low:high], p0=p01, bounds=(0,np.inf), maxfev=8000, absolute_sigma=True)
 			x1,y1,err1=getGausRange(x,y,errs,popt)
 			TS = calc_chisquare(y1, err1, Gauss(x1,*popt))
@@ -131,7 +132,7 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 			if NDF==0:
 				NDF=1e-8
 			goodness = TS/float(NDF)
-			print("chisquare/NDF = {0:.2f} / {1:f} = {2:.2f}".format(TS, NDF, TS / float(NDF)))
+			#print("chisquare/NDF = {0:.2f} / {1:f} = {2:.2f}".format(TS, NDF, TS / float(NDF)))
 		if goodness<goodness_last:
 			popt_best=popt
 			pcov_best=pcov
@@ -153,7 +154,7 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 #Can fit pulse integral with optional integral input
 #Can fit Compton Edge with integrated Gaussian with optional edge input
 #Can calibrate measured signal to keV using calibration curve and fit calibrated spectrum with optional edge and fit inputs
-def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, dataset='run1', fit=-1, coef=0, savedir=None, binSize=0):
+def enResPlot(settings, integral=False, edge=False, injection=False, fitLow=0, fitHigh=np.inf, dataset='run1', fit=-1, coef=0, savedir=None, binSize=0):
 	#Define inputs
 	file=settings[0]
 	title=settings[1]
@@ -229,7 +230,11 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 	if muGuess>fitHigh or muGuess<fitLow:
 		muGuess=binCenters[low_i]+(binCenters[high_i]-binCenters[low_i])/2.
 	ampGuess=ydata[low_i:high_i].max()
-	sigGuess=muGuess/10.
+	if injection:	
+		#large range requires dynamic parameter estimation - fit VERY dependent on initial sigma value
+		sigGuess=(binCenters[high_i]-muGuess)/(muGuess*10)
+	else:
+		sigGuess=muGuess/10.
 	if edge:
 		p01 = [ampGuess, ampGuess, muGuess, sigGuess]
 	else:
@@ -242,6 +247,9 @@ def enResPlot(settings, integral=False, edge=False, fitLow=0, fitHigh=np.inf, da
 		#Calculate N (events within 2sigma of mean)
 		integ=scipy.integrate.quad(Edge, -2*Sigma, 2*Sigma, args=(Amp1,Amp2,Mu,Sigma))
 		#returns integral and uncertainty on calculation - only return integral value
+	elif injection: #don't need fancy fitting for Gaussian peaks
+		popt, pcov = curve_fit(Gauss, xdata=binCenters[low_i:high_i], ydata=ydata[low_i:high_i], sigma=errs[low_i:high_i], p0=p01, bounds=(0,np.inf), maxfev=5000, absolute_sigma=True)
+		(Amp, Mu, Sigma)=popt
 	else:		
 		#Refine fit range
 		if fitLow<muGuess-sigGuess:#if too much low data below peak
