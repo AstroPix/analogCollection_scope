@@ -109,9 +109,6 @@ def iterativeFit(fitFn, p01, x, y, low, high, maxIt=25):
 	popt_best=[0,0,0]
 	pcov_best=0
 
-
-	p01=[70,0.24,0.02]
-
 	i=0
 	while i<maxIt:
 		print("Fit iteration "+str(i))
