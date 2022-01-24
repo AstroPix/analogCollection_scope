@@ -353,13 +353,15 @@ fitFn = energyCalibFit(energyList, muArr, muErrArr, "Fit Mean [V]", saveDir, tra
 if pix==1:
 	if chip==3:
 	#chip003
-		files=["110421_amp1/Americium_480min_combined.h5py","102021_amp1/cadmium109_45min.h5py","102821_amp1/cadmium109_16h.h5py","110821_amp1/barium133_combined_65min.h5py","102021_amp1/cobalt57_14h.h5py","102021_amp1/cobalt57_14h.h5py","102021_amp1/cobalt57_14h.h5py"]
-		name=["Americium241-calib","Cadmium109-calib","Cadmium109-calib","Barium133-calib","Cobalt57-calib","Cobalt57-calib","Cobalt57-calib"]
-		trueEn=[59.54,22.16,88.03,30.97,122.06,14.41,39.46]
-		binSizeArr=[0,0,1,0,1,0,0]#default 0
+		#not fitting edge
+		files=["110421_amp1/Americium_480min_combined.h5py","102021_amp1/cadmium109_45min.h5py","102821_amp1/cadmium109_16h.h5py","110821_amp1/barium133_combined_65min.h5py","102021_amp1/cobalt57_14h.h5py","102021_amp1/cobalt57_14h.h5py"]
+		name=["Americium241-calib","Cadmium109-calib","Cadmium109-calib","Barium133-calib","Cobalt57-calib","Cobalt57-calib"]
+		trueEn=[59.54,22.16,88.03,30.97,122.06,14.41]
+		binSizeArr=[0,0,1,1,1,0,0]#default 0
 		if traceInteg:
-			fitLowArr=[50,0,0,0,0,0,0]
-			fitHighArr=[np.inf,np.inf,np.inf,np.inf,np.inf,np.inf,np.inf]
+			print("reading the correct values")
+			fitLowArr=[50,0,0,60,100,0]
+			fitHighArr=[np.inf,np.inf,np.inf,np.inf,np.inf,np.inf]
 		else:
 			fitLowArr=[50,0,60,0,98,0,35] #default 0
 			fitHighArr=[np.inf,np.inf,np.inf,np.inf,np.inf,np.inf,60] #default np.inf
@@ -367,7 +369,7 @@ if pix==1:
 		for i,f in enumerate(files):
 			settings=[homeDir+f,name[i],pix,trueEn[i],savePlots,chip]
 			popt, enRes, pcov = enResFitting.enResPlot(settings,fit=fit,coef=fitFn,fitLow=fitLowArr[i], fitHigh=fitHighArr[i], binSize=binSizeArr[i], integral=traceInteg)
-			enResFitting.printParams(settings, popt, enRes, pcov)
+			enResFitting.printParams(settings, popt, enRes, pcov, integral=traceInteg)
 	
 	elif chip==4:		
 	#chip004
@@ -385,7 +387,7 @@ if pix==1:
 		for i,f in enumerate(files):
 			settings=[homeDir+f,name[i],pix,trueEn[i],savePlots,chip]
 			popt, enRes, pcov = enResFitting.enResPlot(settings,fit=fit,coef=fitFn,fitLow=fitLowArr[i], binSize=binSizeArr[i], integral=traceInteg)
-			enResFitting.printParams(settings, popt, enRes, pcov)
+			enResFitting.printParams(settings, popt, enRes, pcov, integral=traceInteg)
 		
 					
 elif pix==2:
