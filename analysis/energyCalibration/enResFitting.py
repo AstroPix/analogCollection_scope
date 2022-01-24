@@ -358,7 +358,7 @@ def printParams(settings, popt, en_res, pcov, integral=False, edge=False, inject
 			k=open(saveto, "w")
 			k.write("Amplitude = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp, Mu, Sigma)+"\n")
 		else:
-			saveto=f"{getSaveto(savedir)}{title}_{energy}V{datain}EnRes.txt"
+			saveto=f"{getSaveto(savedir)}{title}_{energy}line{datain}EnRes.txt"
 			k=open(saveto, "w")
 			k.write("Amplitude = %d \nMu = %0.4f \nSigma = %0.4f" %(Amp, Mu, Sigma)+"\n")
 		k.write("\n")#keep empty line as place holder so code is backwards compatible - this line used to hold output of N calculation
@@ -416,24 +416,6 @@ def getVals_fromTxt(inDir, integral=False):
 		muErrArr1.append(float(lines[6+plus].split(' = ')[-1]))
 		sigErrArr1.append(float(lines[7+plus].split(' = ')[-1]))
 		enresErrArr1.append(float(lines[8+plus].split(' = ')[-1][:-2]))#eliminate % sign at the end
-	
-	"""
-	intFiles = glob.glob('*integral*.txt')
-	for filename in intFiles:
-		plus=0
-		energy=float(filename.split('_')[1][:-4])
-		energyIndex=energyList.index(energy)
-		if "edge" in filename:
-			plus=1
-		openFile=open(filename,'r')
-		lines=openFile.readlines()
-		muArr1[energyIndex].append(float(lines[1].split(' = ')[-1]))
-		sigmaArr1[energyIndex].append(float(lines[2].split(' = ')[-1]))
-		enResArr1[energyIndex].append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
-		muErrArr1[energyIndex].append(float(lines[6+plus].split(' = ')[-1]))
-		sigErrArr1[energyIndex].append(float(lines[7+plus].split(' = ')[-1]))
-		enresErrArr1[energyIndex].append(float(lines[8+plus].split(' = ')[-1][:-2]))#eliminate % sign at the end
-	"""
 
 	return energyList, muArr1, sigmaArr1, enResArr1, muErrArr1, sigErrArr1, enresErrArr1
 	
@@ -450,39 +432,31 @@ def getCalibVals_fromTxt(inDir, ele, integral=False):
 		plus=0
 		os.chdir(inDir+fit+'/')
 		newfile = glob.glob('*'+ele+'*'+dsName+'*.txt') #returns array with length 1
-		energyList.append(float(newfile[0].split('_')[1][:-4]))
-		if "edge" in newfile[0]:
-			plus=1
-		openFile = open(newfile[0],'r')
-		lines=openFile.readlines()
-		muArr1.append(float(lines[1].split(' = ')[-1]))
-		sigmaArr1.append(float(lines[2].split(' = ')[-1]))
-		enResArr1.append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
-		muErr.append(float(lines[6+plus].split(' = ')[-1]))
-		sigErr.append(float(lines[7+plus].split(' = ')[-1]))
-		enresErr.append(float(lines[8+plus].split(' = ')[-1][:-2]))#eliminate % sign at the end
-
-		"""
-		#when integral-calibrated plots are made
-		muArr1.append([float(lines[1].split(' = ')[-1])])
-		sigmaArr1.append([float(lines[2].split(' = ')[-1])])
-		nArr1.append([float(lines[3].split(' = ')[-1])])
-		enResArr1.append([float(lines[4].split(' = ')[-1][:-2])])#eliminate % sign at the end
+		try:
+			energyList.append(float(newfile[0].split('_')[1][:-4]))
+			if "edge" in newfile[0]:
+				plus=1
+			openFile = open(newfile[0],'r')
+			lines=openFile.readlines()
+			muArr1.append(float(lines[1].split(' = ')[-1]))
+			sigmaArr1.append(float(lines[2].split(' = ')[-1]))
+			enResArr1.append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
+			muErr.append(float(lines[6+plus].split(' = ')[-1]))
+			sigErr.append(float(lines[7+plus].split(' = ')[-1]))
+			enresErr.append(float(lines[8+plus].split(' = ')[-1][:-2]))#eliminate % sign at the end
+		except IndexError: #file does not exist so newfile[0] returns index error
+			#fill with dummy values
+			energyList.append(0)
+			muArr1.append(0)
+			sigmaArr1.append(0)
+			enResArr1.append(0)
+			muErr.append(0)
+			sigErr.append(0)
+			enresErr.append(0)
+			
+	energy= max(energyList)#if missing elements, array populated with zeros. Want to return the real energy, found from populated values
 	
-
-		intFile = glob.glob('*'+ele+'*integral*.txt') #returns array with length 1
-		print(intFile)
-		energyList.append(float(peakFile[0].split('_')[1][:-4]))
-		openFile = open(peakFile[0],'r')
-		print(openFile)
-		lines=openFile.readlines()
-		muArr1[energyIndex].append(float(lines[1].split(' = ')[-1]))
-		sigmaArr1[energyIndex].append(float(lines[2].split(' = ')[-1]))
-		nArr1[energyIndex].append(float(lines[3].split(' = ')[-1]))
-		enResArr1[energyIndex].append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
-		"""
-	
-	return energyList[0], muArr1, sigmaArr1, enResArr1, fits, muErr, sigErr, enresErr
+	return energy, muArr1, sigmaArr1, enResArr1, fits, muErr, sigErr, enresErr
 		
 	
 def calcError(sigmaArr, nArr):	
