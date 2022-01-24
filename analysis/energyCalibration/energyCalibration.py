@@ -407,7 +407,7 @@ elif pix==2:
 		for i,f in enumerate(files):
 			settings=[homeDir+f,name[i],pix,trueEn[i],savePlots,chip]
 			popt, enRes, pcov = enResFitting.enResPlot(settings,fit=fit,coef=fitFn,fitLow=fitLowArr[i], fitHigh=fitHighArr[i], binSize=binSizeArr[i],integral=traceInteg)
-			enResFitting.printParams(settings, popt, enRes, pcov)
+			enResFitting.printParams(settings, popt, enRes, pcov, integral=traceInteg)
 	
 
 	elif chip==4:
@@ -427,5 +427,5 @@ elif pix==2:
 		for i,f in enumerate(files):
 			settings=[homeDir+f,name[i],pix,trueEn[i],savePlots,chip]
 			popt, enRes, pcov = enResFitting.enResPlot(settings,fit=fit,coef=fitFn,fitLow=fitLowArr[i], fitHigh=fitHighArr[i],binSize=binSizeArr[i],integral=traceInteg)
-			enResFitting.printParams(settings, popt, enRes, pcov)
+			enResFitting.printParams(settings, popt, enRes, pcov, integral=traceInteg)
 			
