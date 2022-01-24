@@ -8,6 +8,11 @@ sys.path.insert(1, 'energyCalibration/')
 import enResFitting
 
 
+savePlots=True
+traceInteg=True
+label = "integ" if traceInteg else "peaks"
+
+
 def sqrtFit(x,A,B):
 	return A/np.sqrt(x)+B
 	
@@ -38,8 +43,8 @@ def calcChi2(true,meas,err,popt):
 	
 	
 	
-def muEnResPlot(dir,ele, pix, savePlots):
-	en, mu, sig, enRes, fits, muErr, sigErr, enresErr = enResFitting.getCalibVals_fromTxt(dir, ele)
+def muEnResPlot(dir, ele, pix, savePlots):
+	en, mu, sig, enRes, fits, muErr, sigErr, enresErr = enResFitting.getCalibVals_fromTxt(dir, ele, integral=traceInteg)
 	fig, ax1 = plt.subplots()
 	color = 'tab:blue'
 	plt.xlabel('Fit function')
@@ -53,7 +58,7 @@ def muEnResPlot(dir,ele, pix, savePlots):
 	plt.errorbar(fits,enRes, yerr=enresErr, fmt='o',color=color)
 	ax2.tick_params(axis='y', labelcolor=color)
 	plt.title(f"{ele} {en} keV line - amp{pix}")
-	saveto=dir+ele+"_amp"+str(pix)+"_muEnRes_calib2.pdf"
+	saveto=dir+ele+"_amp"+str(pix)+"_muEnRes_"+label+"_calib2.pdf"
 	plt.savefig(saveto) if savePlots else plt.show()
 
 def getChi2(indir):
@@ -62,7 +67,8 @@ def getChi2(indir):
 
 	for fit in fits:
 		os.chdir(indir+fit+'/')
-		fitFile = glob.glob('fit*.txt') #returns array with length 1
+		#AMANADA - make variable for peaks/integral with backwards compatibilithy
+		fitFile = glob.glob('*fit*.txt') #ONLY POSSIBLE WHEN _ONE_ FIT FILE PRESENT (not both peaks and integral)
 		openFile = open(fitFile[0],'r')
 		lines=openFile.readlines()
 		fitline=lines[1].split(' = ')
@@ -74,7 +80,7 @@ def getChi2(indir):
 
 def chi2RatioPlot(dir, ele, pix, savePlots):
 	chi2, ndof = getChi2(dir)
-	en, mu, sig, enRes, fits, muErr, sigErr, enresErr = enResFitting.getCalibVals_fromTxt(dir, ele)
+	en, mu, sig, enRes, fits, muErr, sigErr, enresErr = enResFitting.getCalibVals_fromTxt(dir, ele, integral=traceInteg)
 	
 	enRatio = [x/en for x in mu]
 	for i,item in enumerate(ndof):
@@ -95,13 +101,13 @@ def chi2RatioPlot(dir, ele, pix, savePlots):
 	plt.plot(fits,goodness,'o',color=color)
 	ax2.tick_params(axis='y', labelcolor=color)
 	plt.title(f"{ele} {en} keV line - amp{pix}")
-	saveto=dir+ele+"_amp"+str(pix)+"_chi2Ratio_calib2.pdf"
+	saveto=dir+ele+"_amp"+str(pix)+"_chi2Ratio_"+label+"_calib2.pdf"
 	plt.savefig(saveto) if savePlots else plt.show()
 	
 def sigmaPlot(dir, ele, pix, savePlots):
-	en, mu, sig, enRes, fits, muErr, sigErr, enresErr = enResFitting.getCalibVals_fromTxt(dir, ele)
+	en, mu, sig, enRes, fits, muErr, sigErr, enresErr = enResFitting.getCalibVals_fromTxt(dir, ele, integral=traceInteg)
 	
-	lim={22.16:2.13, 59.54:3.49, 122.06:5} #sigma values necessary to achieve proposal sensitivity
+	lim={22.16:2.13, 59.54:3.49, 122.06:5, 88.03:4.25} #sigma values necessary to achieve proposal sensitivity
 	
 	fig, ax1 = plt.subplots()
 	color = 'tab:blue'
@@ -111,22 +117,21 @@ def sigmaPlot(dir, ele, pix, savePlots):
 	plt.axhline(y=lim[en], color='black', linestyle='-')
 	ax1.tick_params(axis='y', labelcolor=color)
 	plt.title(f"{ele} {en} keV line - amp{pix}")
-	saveto=dir+ele+"_amp"+str(pix)+"_sigma_calib2.pdf"
+	saveto=dir+ele+"_amp"+str(pix)+"_sigma_"+label+"_calib2.pdf"
 	plt.savefig(saveto) if savePlots else plt.show()
 
 
 
 ############################################################################################
 ############################################################################################
-savePlots=True
 dataDir1="/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/chip003/amp1_peaks/"
 dataDir2="/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/chip003/amp2_peaks/"
 
 	
 #raw data
-energyList1, muArr1, sigmaArr1, enResArr1, muErr1, sigErr1, enresErr1 = enResFitting.getVals_fromTxt(dataDir1+"fitSpectra/")
+energyList1, muArr1, sigmaArr1, enResArr1, muErr1, sigErr1, enresErr1 = enResFitting.getVals_fromTxt(dataDir1+"fitSpectra/", integral=traceInteg)
 
-energyList2, muArr2, sigmaArr2, enResArr2, muErr2, sigErr2, enresErr2 = enResFitting.getVals_fromTxt(dataDir2+"fitSpectra/")
+energyList2, muArr2, sigmaArr2, enResArr2, muErr2, sigErr2, enresErr2 = enResFitting.getVals_fromTxt(dataDir2+"fitSpectra/", integral=traceInteg)
 
 
 #plot energy resolution 
@@ -138,7 +143,7 @@ plt.xlabel("True Energy [keV]")
 plt.ylabel(f"Energy Resolution [%]")	
 plt.legend(loc="best")
 plt.grid()
-plt.savefig(f"{dataDir1}peaks_comparePixels_enRes.pdf") if savePlots else plt.show()
+plt.savefig(f"{dataDir1}{label}_comparePixels_enRes.pdf") if savePlots else plt.show()
 plt.clf()
 
 #plot components of energy calibration - mu and sigma
@@ -179,7 +184,7 @@ plt.xlabel("Measured energy [V]")
 plt.ylabel(f"Measured sigma [V]")	
 plt.legend(loc="best")
 plt.grid()
-plt.savefig(f"{dataDir1}peaks_comparePixels_muVsSig.pdf") if savePlots else plt.show()
+plt.savefig(f"{dataDir1}{label}_comparePixels_muVsSig.pdf") if savePlots else plt.show()
 plt.clf()
 
 
@@ -187,31 +192,38 @@ plt.clf()
 plt.errorbar(energyList1, mu1, yerr=muE1, fmt='o', label="Amp1")
 plt.errorbar(energyList2, mu2, yerr=muE2, fmt='o', color="red", label="Amp2")
 plt.xlabel("True Energy [keV]")
-plt.ylabel(f"Fit Mean [V] (from peak height)")	
+if traceInteg:
+	plt.ylabel(f"Fit Mean [V*ns] (from integral)")
+else:
+	plt.ylabel(f"Fit Mean [V] (from peak height)")	
 plt.legend(loc="best")
 plt.grid()
 plt.xlim([-10,1.1*np.max(energyList1)])
-plt.savefig(f"{dataDir1}peaks_comparePixels.pdf") if savePlots else plt.show()
+plt.savefig(f"{dataDir1}{label}_comparePixels.pdf") if savePlots else plt.show()
 plt.clf()
 
 
 #calibrated data
-dataDir1="/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/chip003/amp1_peaks/amp1Calib/"
+dataDir1="/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/chip003/amp1_peaks/amp2Calib/"
 dataDir2="/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/chip003/amp2_peaks/amp2Calib/"
 
 muEnResPlot(dataDir1, "Cad", 1, savePlots)
 muEnResPlot(dataDir2, "Cad", 2, savePlots)
-muEnResPlot(dataDir1, "Am", 1, savePlots)
-muEnResPlot(dataDir2, "Am", 2, savePlots)
+#muEnResPlot(dataDir1, "Am", 1, savePlots)
+#muEnResPlot(dataDir2, "Am", 2, savePlots)
+muEnResPlot(dataDir1, "Cobalt57-calib_122.06", 1, savePlots)
+muEnResPlot(dataDir2, "Cobalt57-calib_122.06", 2, savePlots)
 
 chi2RatioPlot(dataDir1, "Cad", 1, savePlots)
 chi2RatioPlot(dataDir2, "Cad", 2, savePlots)
-chi2RatioPlot(dataDir1, "Am", 1, savePlots)
-chi2RatioPlot(dataDir2, "Am", 2, savePlots)
+#chi2RatioPlot(dataDir1, "Am", 1, savePlots)
+#chi2RatioPlot(dataDir2, "Am", 2, savePlots)
+chi2RatioPlot(dataDir1, "Cobalt57-calib_122.06", 1, savePlots)
+chi2RatioPlot(dataDir2, "Cobalt57-calib_122.06", 2, savePlots)
 
 sigmaPlot(dataDir1, "Cad", 1, savePlots)
 sigmaPlot(dataDir2, "Cad", 2, savePlots)
-sigmaPlot(dataDir1, "Am", 1, savePlots)
-sigmaPlot(dataDir2, "Am", 2, savePlots)
+#sigmaPlot(dataDir1, "Am", 1, savePlots)
+#sigmaPlot(dataDir2, "Am", 2, savePlots)
 sigmaPlot(dataDir1, "Cobalt57-calib_122.06", 1, savePlots)
 sigmaPlot(dataDir2, "Cobalt57-calib_122.06", 2, savePlots)
