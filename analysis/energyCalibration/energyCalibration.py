@@ -117,8 +117,8 @@ def getFiles(amp):
 				fitLowArr=[0.02,0.18,0.0,0.24]
 				fitHighArr=[0.05,1,0.07,0.26]
 			else:
-				fitLowArr=[0,00,0]
-				fitHighArr=[30,80,10]
+				fitLowArr=[0,0,0,0]
+				fitHighArr=[30,80,10,90]
 	else:
 		print("Choose amp1 or amp2")
 		fileList,energyList,nameList,fitLowArr, fitHighArr = [],[],[],[],[]
@@ -417,7 +417,7 @@ elif pix==2:
 		trueEn=[22.16,88.03,14.41, 122.06]
 		binSizeArr=[0,1,1,2] #default 0
 		if traceInteg:
-			fitLowArr=[0,80,0,110]
+			fitLowArr=[0,60,0,100]
 			fitHighArr=[np.inf,np.inf,np.inf,np.inf]
 		else:
 			#fitLowArr=[17,82,0,116] #default 0
