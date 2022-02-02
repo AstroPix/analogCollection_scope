@@ -227,7 +227,7 @@ def enResPlot(settings, integral=False, edge=False, injection=False, fitLow=0, f
 	if muGuess>fitHigh or muGuess<fitLow:
 		muGuess=binCenters[low_i]+(binCenters[high_i]-binCenters[low_i])/2.
 	ampGuess=ydata[low_i:high_i].max()
-	if injection:	
+	if injection and not integral:
 		#large range requires dynamic parameter estimation - fit VERY dependent on initial sigma value
 		sigGuess=(binCenters[high_i]-muGuess)/(muGuess*10)
 	else:
@@ -310,7 +310,7 @@ def enResPlot(settings, integral=False, edge=False, injection=False, fitLow=0, f
 		elif edge:	
 			saveto=f"{getSaveto(savedir)}{title}{datain}EdgeFit_{energy}edge.pdf"
 		else:
-			saveto=f"{getSaveto(savedir)}{title}{datain}_{energy}line.pdf"
+			saveto=f"{getSaveto(savedir)}{title}{datain}_amp{pixel}_{energy}line.pdf"
 		plt.savefig(saveto)
 	else:
 		plt.show()

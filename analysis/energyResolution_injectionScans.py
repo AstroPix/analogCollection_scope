@@ -11,7 +11,7 @@ import enResFitting
 savePlots=True
 #Fit peak heights or integral value (scaled by scope resolution)
 #If traceInteg is true, use integral. If false, use peak height
-traceInteg = False
+traceInteg = True
 
 
 def injScanPlot(inj, data, err, dataName, saveto, chip, fit=False):
@@ -31,10 +31,10 @@ def injScanPlot(inj, data, err, dataName, saveto, chip, fit=False):
 	plt.legend(loc="best")
 	if traceInteg:
 		plt.ylabel(f"{dataName} (from integral)")
-		plt.savefig(f"{saveto}peaks_chip{chip}_{dataNameStr}.pdf") if savePlots else plt.show()
+		plt.savefig(f"{saveto}integ_chip{chip}_{dataNameStr}.pdf") if savePlots else plt.show()
 	else:
 		plt.ylabel(f"{dataName} (from peak height)")
-		plt.savefig(f"{saveto}integ_chip{chip}_{dataNameStr}.pdf") if savePlots else plt.show()
+		plt.savefig(f"{saveto}peaks_chip{chip}_{dataNameStr}.pdf") if savePlots else plt.show()
 	plt.clf()
 
 	if fit:
@@ -50,7 +50,7 @@ def injScanPlot(inj, data, err, dataName, saveto, chip, fit=False):
 	
 ###########################################################################
 #Lowest injection values (0.1 - 0.3V) have scope scalings that are too large relative to the distribution
-injection=[i*0.1 for i in range(5,19)]
+injection=[i*0.1 for i in range(5,14)] #1,19
 homeDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp"
 saveDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/chip003/"
 runList = [[102221,1],[102221,2]] #day of run, pixel number
