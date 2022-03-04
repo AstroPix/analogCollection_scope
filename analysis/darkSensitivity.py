@@ -32,7 +32,6 @@ def get_baseline_plt(filename, dataset, xrange=0.004):
 	baseline=baseline[:,0:2000]
 	rmsArr=[np.std(trace) for trace in baseline] 
 	
-	
 	xspace=np.linspace(0,xrange,50)
 	hist,binEdges=np.histogram(rmsArr, bins=xspace)
 	binWidth=binEdges[1]-binEdges[0]
@@ -40,7 +39,38 @@ def get_baseline_plt(filename, dataset, xrange=0.004):
 	binCenters=binCenters[:-1]
 
 	return binCenters, hist
+	
+def first_nonzero(lst):
+	for i, value in enumerate(lst):
+		if value > 0.02:
+			return i
+	return -1
 
+def last_nonzero(lst):
+	for i, value in enumerate(reversed(lst)):
+		if value > 0.02:
+			return len(lst)-i-1
+	return -1
+
+	
+def get_height_duration(filename, dataset):
+
+	f = h5py.File(filename, 'r')
+	traces = np.array(f[dataset]) #baseline subtracted already
+	time = np.array(f[dataset+"_t"])
+	
+	toHist=[]
+	for trace in traces:
+		height=np.max(trace)
+		duration_start=first_nonzero(trace)
+		duration_end=last_nonzero(trace)
+		duration=time[duration_end]-time[duration_start]
+		if duration==0:
+			duration=1e-8
+		toHist.append(height/duration)
+
+
+	return toHist
 
 ###############################
 #Runnable choices
@@ -114,10 +144,70 @@ def plotTraces_compare(fileName, dataset,labels, xrange=0.004, ratioBool=True):
 		plt.savefig(f"{homeDir}/noise_gain_threshold/102221_amp{pixel}_0.05Vinj_noiseRMS_{labels[0]}.pdf")
 		plt.clf()
 			
+#Compare two traces by plotting together, plotting ratio, and calculating correlation of height and duration
+def plotTraces_compareVersions(fileName,labels, xrange=0.004, ratioBool=True):
+	traces=[]
+	ratioHist=[]
+	ratio=None
+	noiseRMS=[]
+	dataset="run1"
+	if ratioBool:
+		fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [2,1]})
+	else:
+		#cheat so that ratio plot is not displayed in what is technically a second subfigure
+		fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [100,1]})
+	fig.suptitle(f"1.0V Injection, v1 Chip003 pixel 1 vs v2")
+	for i,name in enumerate(fileName):
+		file=homeDir+name
+		time=get_time(file,dataset)
+		trace=get_average_trace(file, dataset)
+		binCenters, hist= get_baseline_plt(file, dataset, xrange)
+		ratioHist_tmp = get_height_duration(file,dataset)
+		noiseRMS.append(binCenters)
+		noiseRMS.append(hist)
+		axs[0].plot(time*1e6, trace, label=f"{labels[i]}")
+		traces.append(trace)
+		ratioHist.append(ratioHist_tmp)
+	ratio=traces[0]/traces[1]
+	axs[0].legend(loc="best")
+	plt.xlabel( "time ($\mu$s)" )
+	plt.setp(axs[0], ylabel="trace - baseline [V]")
+	if ratioBool:
+		axs[1].plot(time*1e6,ratio)
+		plt.setp(axs[1],ylabel=f"Ratio {labels[0]}/{labels[1]}")
+	plt.show()
+	#plt.savefig(f"{homeDir}/noise_gain_threshold/102221_amp{pixel}_0.05Vinj_traces_compare{labels[0]}.pdf")
+	plt.clf()
+
+	#plot RMS
+	labelIndex=0
+	for i in range(len(noiseRMS)): 
+		if i%2!=0: #Find end of plotting pair
+			plt.plot(noiseRMS[i-1],noiseRMS[i],label=labels[labelIndex])
+			labelIndex+=1
+	#plt.plot(noiseRMS[2],noiseRMS[3],label=labels[2])
+	plt.title(f"Noise RMS")
+	plt.xlabel("RMS [V]")
+	plt.ylabel("counts")
+	plt.legend(loc="best")
+	plt.show()
+	#plt.savefig(f"{homeDir}/noise_gain_threshold/102221_amp{pixel}_0.05Vinj_noiseRMS_{labels[0]}.pdf")
+	plt.clf()	
 		
-		
-		
-		
+	#plot ratio of height to duration	
+	h1,bins=np.histogram(ratioHist[0])
+	binWidth=(bins[1]-bins[0])/2
+	bins1=bins+binWidth
+	plt.plot(bins1[:-1],h1,label="v1")
+	h2,bins=np.histogram(ratioHist[1])
+	binWidth=(bins[1]-bins[0])/2
+	bins2=bins+binWidth
+	plt.plot(bins2[:-1],h2,label="v2")
+	plt.xscale('log')
+	plt.xlabel("height/duration")
+	plt.ylabel("counts")
+	plt.legend(loc="best")
+	plt.show()
 		
 		
 		
@@ -131,12 +221,15 @@ if __name__ == "__main__":
 	trigScan=[str(i)+"mV" for i in trigScanVal]
 	trigScan.insert(0,"scaleScan")
 	homeDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp"
+	versions=["v1","v2"]
 	
-	plotTraces()		
-	plotTraces_compare([""],dataset,gain)	
-	plotTraces_compare(fileName,["run1"],dark)	
-	plotTraces_compare(fileName_scan,["run1"],trigScan,xrange=0.03,ratioBool=False)	
-		
+	fileName_versions=["/v1/102221_amp1/1.0Vinj.h5py","/v2/030122_amp1/scan_1.0Vinj_2min.h5py"]
+	
+	#plotTraces()		
+	#plotTraces_compare([""],dataset,gain)	
+	#plotTraces_compare(fileName,["run1"],dark)	
+	#plotTraces_compare(fileName_scan,["run1"],trigScan,xrange=0.03,ratioBool=False)	
+	plotTraces_compareVersions(fileName_versions,versions,xrange=0.01)	
 		
 		
 		
