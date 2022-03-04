@@ -16,7 +16,7 @@ def histDisplay(f_in,ds='run1_peaks', xBinWidth=0.002):
 	data=f[ds]
 	#data=[x*1e-7 for x in data]
 	
-	scale=f['run1_scaling']
+	#scale=f['run1_scaling']
 	#print(np.array(scale))
 	xMax=np.max(data)
 	xMin=np.min(data)
@@ -121,16 +121,15 @@ def histDisplay_baseline(f_in,ds='run1_peaks', xBinWidth=0.002):
 def combineFiles(files,outFile):
 
 	ds="run1"
-	#dsNames=["_t", "_peaks", "_integral", "_baseline", "_trigTime"]
-	dsNames=["_t", "_peaks", "_integral", "_baseline"]
+	#dsNames=["_t", "_peaks", "_integral", "_baseline", "_scaling"]
+	dsNames=["_peaks", "_integral", "_baseline", "_scaling"]
+
 
 	dataArrays=[]
-	print(dataArrays)
-	#datap=np.array([])
-	#datai=np.array([])
-	#datas=np.array([])
 	for fin in files:
 		f=h5py.File(homeDir+fin,'r')
+		print(homeDir+fin)
+		print(list(f.keys()))
 		i=0
 		for dsn in dsNames:
 			dataArrays.append(np.array([]))
@@ -174,13 +173,15 @@ if __name__ == "__main__":
 	filesIn=["102921_amp1/americium241_90min.h5py", "110421_amp1/Americium_120min.h5py","110421_amp1/test_Americium_30min.h5py","110421_amp1/_Americium_240min.h5py"]
 	outFile="110421_amp1/Americium_480min_combined.h5py"
 	
-	todel="110821_amp1/barium133_combined_65min.h5py"
-	filesInBa = ["110821_amp1/test_barium133_30min.h5py","110821_amp1/test_barium133_35min.h5py"]
+	todel="121521_amp1/150mV_chip004_cobalt57_combined_2040min.h5py"
+	#todel="011022_amp2/chip004_cobalt57_combined_2220min.h5py"
+	filesInCd = ["120721_amp1/highPeak_chip004_AC_cobalt57_960min.h5py","121521_amp1/150mV_chip004_cobalt57_1020min.h5py"]
+	filesInCo = ["121421_amp2/150mV_chip004_cobalt57_1200min.h5py","011022_amp2/chip004_cobalt57_1020min.h5py"]
 	
-	#histDisplay("120721_amp1/lowPeak_chip004_AC_cobalt57_60min.h5py",xBinWidth=0.002)
-	histDisplay_baseline("120921_amp1/90mV_chip004_AC_Cadmium_1200min.h5py",ds='run1_baseline', xBinWidth=0.00005)
+	#histDisplay("121521_amp1/150mV_chip004_cobalt57_combined_2040min.h5py",xBinWidth=0.002)
+	#histDisplay_baseline("120921_amp1/90mV_chip004_AC_Cadmium_1200min.h5py",ds='run1_baseline', xBinWidth=0.00005)
 	#histDisplay("120221_amp2/calib_cadmium190_1080min.h5py",ds='run1_baseline', xBinWidth=0.00005)
-	#combineFiles(filesInBa, todel)
+	combineFiles(filesInCd, todel)
 	#copyScalingDS("110821_amp1/test_barium133_30min.h5py",todel)
 
 		
