@@ -203,7 +203,8 @@ def enResPlot(settings, integral=False, edge=False, injection=False, fitLow=0, f
 		if integral and fit==-1:
 			xBinWidth=1 #[V*ns]
 	xMax=np.max(data)
-	xMin=0
+	xMin=np.min(data) if injection else 0
+	#xMin=0
 	binEdges=np.arange(xMin,xMax+xBinWidth,xBinWidth)#use peakMax+xBinWidth to overshoot range and include all data
 	
 	#Create histogram of data
