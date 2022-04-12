@@ -20,7 +20,7 @@ amp1 calibration:
 > 102021_amp1/cobalt57_14h.h5py
 > 102021_amp1/cobalt57_14h.h5py
 > 110421_amp1/Americium_480min_combined.h5py
->> Combined files: 102921_amp1/americium241_90min.h5py, 110421_amp1/Americium_120min.h5py, 110421_amp1/test_Americium_30min.h5py
+>> Am combined files: 102921_amp1/americium241_90min.h5py, 110421_amp1/Americium_120min.h5py, 110421_amp1/test_Americium_30min.h5py
 
 > 110821_amp1/barium133_combined_65min.h5py
 
@@ -44,14 +44,14 @@ amp1 calibration:
 > 120921_amp1/90mV_chip004_AC_Cadmium_1200min.h5py
 > 120721_amp1/lowPeak_chip004_AC_cobalt57_60min.h5py
 > 121521_amp1/150mV_chip004_cobalt57_combined_2040min.h5py
->> Combined files: 120721_amp1/highPeak_chip004_AC_cobalt57_960min.h5py, 121521_amp1/150mV_chip004_cobalt57_1020min.h5py
+>> Co combined files: 120721_amp1/highPeak_chip004_AC_cobalt57_960min.h5py, 121521_amp1/150mV_chip004_cobalt57_1020min.h5py
 
 amp2 calibration:
 > 121321_amp2/15mV_chip004_AC_cadmium109_120min.h5py
 > 121321_amp2/90mV_chip004_AC_cadmium109_1200min.h5py
 > 121521_amp2/15mV_chip004_cobalt57_60min.h5py
 > 011022_amp2/chip004_cobalt57_combined_2220min.h5py
->> Combined files: 121421_amp2/150mV_chip004_cobalt57_1200min.h5py, 011022_amp2/chip004_cobalt57_1020min.h5py
+>> Co combined files: 121421_amp2/150mV_chip004_cobalt57_1200min.h5py, 011022_amp2/chip004_cobalt57_1020min.h5py
 
 
 ### v2
@@ -74,10 +74,11 @@ Injection scan (new DACs settings, after HI irradiation)
 amp1 calibration (old DACs settings)
 > 030322_amp1/TEST_chip2_cadmium109_10min.h5py
 > 030822_amp1/chip2_200mV_cadmium109_330min_combined.h5py
->> Combined files: 030322_amp1/TEST_chip2_200mV_cadmium109_150min.h5py, 030822_amp1/chip2_200mV_cadmium109_180min.h5py
 > 030422_amp1/chip2_varTrig_cobalt57_300min_combined.h5py
->> Combined files: 030422_amp1/chip2_75mV_cobalt57_120min.h5py, 030422_amp1/chip2_75mV_cobalt57_120min.h5py, 030422_amp1/chip2_150mV_cobalt57_150min.h5py
 > 030422_amp1/chip2_75mV_cobalt57_120min.h5py
 > 030722_amp1/chip2_100mV_barium133_960min.h5py
+>> Cd combined files: 030322_amp1/TEST_chip2_200mV_cadmium109_150min.h5py, 030822_amp1/chip2_200mV_cadmium109_180min.h5py
+>> Co combined files: 030422_amp1/chip2_75mV_cobalt57_120min.h5py, 030422_amp1/chip2_75mV_cobalt57_120min.h5py, 030422_amp1/chip2_150mV_cobalt57_150min.h5py
+
 
 amp1 calibration (new DACs settings, after HI irradiation)
