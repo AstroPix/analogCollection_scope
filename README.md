@@ -50,16 +50,23 @@ amp2 calibration:
 ### v2
 
 #### Chip 2202001 (chip1)
-Injection scans:
+Injection scans (old DACs settings)
 > 030122_amp1
-> 030322_amp1/ (without `chip2`)
+> 030322_amp1/ (without chip2*)
 
 amp1 calibration:
 
 #### Chip 2201002 (chip2)
-Injection scan:
+Injection scan (old DACs settings)
 > 030322_amp1/scan_chip2_*
 
-amp1 calibration:
+Injection scan (new DACs settings, after HI irradiation)
+
+amp1 calibration (old DACs settings)
 > 030322_amp1/TEST_chip2_cadmium109_10min.h5py
-> 030322_amp1/
+> 030822_amp1/chip2_200mV_cadmium109_330min_combined.h5py
+> 030422_amp1/chip2_varTrig_cobalt57_300min_combined.h5py
+> 030422_amp1/chip2_75mV_cobalt57_120min.h5py
+> 030722_amp1/chip2_100mV_barium133_960min.h5py
+
+amp1 calibration (new DACs settings, after HI irradiation)
