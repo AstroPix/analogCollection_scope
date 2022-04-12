@@ -1,0 +1,5 @@
+030322_amp1/TEST_chip2_cadmium109_10min.h5py
+030822_amp1/chip2_200mV_cadmium109_330min_combined.h5py
+030422_amp1/chip2_varTrig_cobalt57_300min_combined.h5py
+030422_amp1/chip2_75mV_cobalt57_120min.h5py
+030722_amp1/chip2_100mV_barium133_960min.h5py
