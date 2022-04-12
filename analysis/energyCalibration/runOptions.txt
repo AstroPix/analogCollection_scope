@@ -1,17 +1,21 @@
 #For correct parsing, ensure that the equal sign is flanked by spaces - ' = ' 
 
 #notable directories
-homeDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/
-saveDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/chip003/amp1_peaks/amp1Calib/tri/
-dataDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/amp1_peaks/fitSpectra/
+homeDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/v2/
+saveDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v2_chip2/amp1_peaks/amp1Calib/tri/
+dataDir = /Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v2_chip2/amp1_peaks/fitSpectra/
 
 #input data files
 #if full path is not given, homeDir is assumed
 #if no files used (ex: no edge files), pass empty file as argument
-input1 = amp1_inputs.txt
-input1_edge = amp1_edge_inputs_chip004.txt
-input2 = amp2_inputs.txt
-input2_edge = amp2_edge_inputs_chip004.txt
+#to avoid parsing error, make sure to leave an empty line at the END of the file
+#1 and 2 indicate PIXEL addresses - if only one pixel is active, give `empty.txt` argument with empty text file
+
+input1 = v2_chip2/amp1_inputs.txt
+#input1 = v1_chip003/amp1_inputs.txt
+input1_edge = empty.txt
+input2 = empty.txt
+input2_edge = empty.txt
 
 
 #Boolean run options
@@ -22,13 +26,16 @@ savePlots = 0
 fitSpectra = 0
 #Fit peak heights or integral value (scaled by scope resolution)
 #If traceInteg is true, use integral. If false, use peak height
-traceInteg = 1
+traceInteg = 0
 
 #Run options
+#Which chip version - v1 or v2
+version = 2
 #Which pixel / amp being fit - Choose 1 or 2 
-pix = 2
-#Which AstroPix chip - Choose 3 or 4
-chip = 4
+#ONLY ACTIVE FOR v1
+pix = 1
+#Which AstroPix chip - Choose [3 or 4 if v1] or [1 or 2 if v2]
+chip = 2
 #Which fit function to use for calibration curve
 #fits: [0] linear, [1] quadratic, [2] 3rd deg poly, [3] sqrt, [4] 1deg spline, [5] 3deg spline, [6] piecewise linear
-fit = 0
+fit = 2
