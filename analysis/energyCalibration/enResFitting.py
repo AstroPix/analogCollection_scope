@@ -302,6 +302,7 @@ def enResPlot(settings, integral=False, edge=False, injection=False, fitLow=0, f
 		plt.xlabel('Calibrated Energy [keV]')
 		plt.title(f"Calibrated {title}, pixel {pixel}")
 
+	#plt.yscale('log')
 	if savePlots:
 		#save figure
 		if fit>-1 and integral:
@@ -458,6 +459,34 @@ def getCalibVals_fromTxt(inDir, ele, integral=False):
 	energy= max(energyList)#if missing elements, array populated with zeros. Want to return the real energy, found from populated values
 	
 	return energy, muArr1, sigmaArr1, enResArr1, fits, muErr, sigErr, enresErr
+		
+def getCalibVals_fromFit(inDir, fit, integral=False):	
+	#do not consider edge files	
+	energyList, muArr1, sigmaArr1, enResArr1, muErr, sigErr, enresErr = [],[],[],[],[],[],[]
+
+	if integral:
+		dsName="integralEnRes"
+	else:
+		dsName="peaksEnRes"
+
+	os.chdir(inDir+fit+'/')
+	print(f"{inDir}{fit}")
+	newfile = glob.glob('*'+dsName+'*.txt') #returns array with length 1
+	for found in newfile:
+		print(found)
+		if "edge" in found:
+			continue
+		energyList.append(float(found.split('_')[1][:-4]))
+		openFile = open(found,'r')
+		lines=openFile.readlines()
+		muArr1.append(float(lines[1].split(' = ')[-1]))
+		sigmaArr1.append(float(lines[2].split(' = ')[-1]))
+		enResArr1.append(float(lines[4].split(' = ')[-1][:-2]))#eliminate % sign at the end
+		muErr.append(float(lines[6].split(' = ')[-1]))
+		sigErr.append(float(lines[7].split(' = ')[-1]))
+		enresErr.append(float(lines[8].split(' = ')[-1][:-2]))#eliminate % sign at the end
+				
+	return energyList, muArr1, sigmaArr1, enResArr1, muErr, sigErr, enresErr
 		
 	
 def calcError(sigmaArr, nArr):	
