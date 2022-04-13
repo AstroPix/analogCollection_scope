@@ -6,9 +6,9 @@ from scipy.optimize import curve_fit
 
 ###############################
 #Global variables
-vers=1
+vers=2
 homeDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/v{vers}/"
-saveDir= f"/Users/asteinhe/AstroPixData/astropixOut_tmp/noise_gain_thresholdScan/v{vers}/"
+saveDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/noise_gain_thresholdScan/v{vers}/"
 
 ###############################
 #helper functions
@@ -116,10 +116,13 @@ def plotTraces(files,labels,fileOut,ds=["run1"]):
 
 		
 #Compare two traces by plotting together, plotting ratio, and calculating STD of noise from each and plotting
-def plotTraces_compare(fileName,labels, fileOut, ds=["run1"], xrange=0.004, ratioBool=True):
+def plotTraces_compare(fileName,labels, fileOut, ds=["run1"], xrange=0.004, ratioBool=True, versionBool=False, versionArray=[]):
 	traces=[]
 	ratio=None
 	noiseRMS=[]
+	if versionBool:
+		global saveDir
+		saveDir="/Users/asteinhe/AstroPixData/astropixOut_tmp/noise_gain_thresholdScan/"
 	if ratioBool:
 		fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [2,1]})
 	else:
@@ -127,8 +130,15 @@ def plotTraces_compare(fileName,labels, fileOut, ds=["run1"], xrange=0.004, rati
 		fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [100,1]})
 	fig.suptitle(labels[0])
 	i=0
-	for f in fileName:
+	if versionBool and len(versionArray)==0:
+		print("ERROR - Must input array of AstroPix version associated with input files if versionBool=True")
+		return
+	for v,f in enumerate(fileName):
+		if versionBool:
+			global homeDir
+			homeDir=f"/Users/asteinhe/AstroPixData/astropixOut_tmp/v{versionArray[v]}/"
 		file=homeDir+f
+		print(file)
 		for set in ds:
 			time=get_time(file,set)
 			trace=get_average_trace(file, set)
@@ -138,13 +148,13 @@ def plotTraces_compare(fileName,labels, fileOut, ds=["run1"], xrange=0.004, rati
 			i+=1
 			axs[0].plot(time*1e6, trace, label=labels[i])
 			traces.append(trace)
-	ratio=traces[0]/traces[1]
+	ratio=traces[0]/traces[-1]
 	axs[0].legend(loc="best")
 	plt.xlabel( "time ($\mu$s)" )
 	plt.setp(axs[0], ylabel="trace - baseline [V]")
 	if ratioBool:
 		axs[1].plot(time*1e6,ratio)
-		plt.setp(axs[1],ylabel=f"Ratio {labels[1]}/{labels[2]}")
+		plt.setp(axs[1],ylabel=f"Ratio {labels[1]}/{labels[-1]}")
 	plot=plt.gcf() #get current figure - saves fig in case savePlt==True
 	plt.show() #creates new figure for display
 	savePlt=saveFromInput()
@@ -156,10 +166,9 @@ def plotTraces_compare(fileName,labels, fileOut, ds=["run1"], xrange=0.004, rati
 
 	labelIndex=1
 	for i in range(len(noiseRMS)): 
-		if i%2!=0: #Find end of plotting pair
+		if i%2!=0: #Find end of plotting pair [binCenters,hist]
 			plt.plot(noiseRMS[i-1],noiseRMS[i],label=labels[labelIndex])
 			labelIndex+=1
-	#plt.plot(noiseRMS[2],noiseRMS[3],label=labels[2])
 	plt.title(f"Noise RMS - {labels[0]}")
 	plt.xlabel("RMS [V]")
 	plt.ylabel("counts")
@@ -172,71 +181,7 @@ def plotTraces_compare(fileName,labels, fileOut, ds=["run1"], xrange=0.004, rati
 		print(f"Saving {saveFile}")
 		plot.savefig(saveFile)	
 	plt.clf()
-			
-#Compare two traces by plotting together, plotting ratio, and calculating correlation of height and duration
-def plotTraces_compareVersions(fileName,labels, xrange=0.004, ratioBool=True):
-	traces=[]
-	ratioHist=[]
-	ratio=None
-	noiseRMS=[]
-	dataset="run1"
-	if ratioBool:
-		fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [2,1]})
-	else:
-		#cheat so that ratio plot is not displayed in what is technically a second subfigure
-		fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [100,1]})
-	fig.suptitle(f"1.0V Injection, v1 Chip003 pixel 1 vs v2")
-	for i,name in enumerate(fileName):
-		file=homeDir+name
-		time=get_time(file,dataset)
-		trace=get_average_trace(file, dataset)
-		binCenters, hist= get_baseline_plt(file, dataset, xrange)
-		ratioHist_tmp = get_height_duration(file,dataset)
-		noiseRMS.append(binCenters)
-		noiseRMS.append(hist)
-		axs[0].plot(time*1e6, trace, label=f"{labels[i]}")
-		traces.append(trace)
-		ratioHist.append(ratioHist_tmp)
-	ratio=traces[0]/traces[1]
-	axs[0].legend(loc="best")
-	plt.xlabel( "time ($\mu$s)" )
-	plt.setp(axs[0], ylabel="trace - baseline [V]")
-	if ratioBool:
-		axs[1].plot(time*1e6,ratio)
-		plt.setp(axs[1],ylabel=f"Ratio {labels[0]}/{labels[1]}")
-	plt.show()
-	#plt.savefig(f"{homeDir}/noise_gain_threshold/102221_amp{pixel}_0.05Vinj_traces_compare{labels[0]}.pdf")
-	plt.clf()
 
-	#plot RMS
-	labelIndex=0
-	for i in range(len(noiseRMS)): 
-		if i%2!=0: #Find end of plotting pair
-			plt.plot(noiseRMS[i-1],noiseRMS[i],label=labels[labelIndex])
-			labelIndex+=1
-	#plt.plot(noiseRMS[2],noiseRMS[3],label=labels[2])
-	plt.title(f"Noise RMS")
-	plt.xlabel("RMS [V]")
-	plt.ylabel("counts")
-	plt.legend(loc="best")
-	plt.show()
-	#plt.savefig(f"{homeDir}/noise_gain_threshold/102221_amp{pixel}_0.05Vinj_noiseRMS_{labels[0]}.pdf")
-	plt.clf()	
-		
-	#plot ratio of height to duration	
-	h1,bins=np.histogram(ratioHist[0])
-	binWidth=(bins[1]-bins[0])/2
-	bins1=bins+binWidth
-	plt.plot(bins1[:-1],h1,label="v1")
-	h2,bins=np.histogram(ratioHist[1])
-	binWidth=(bins[1]-bins[0])/2
-	bins2=bins+binWidth
-	plt.plot(bins2[:-1],h2,label="v2")
-	plt.xscale('log')
-	plt.xlabel("height/duration")
-	plt.ylabel("counts")
-	plt.legend(loc="best")
-	plt.show()
 		
 		
 ###############################
@@ -255,7 +200,7 @@ if __name__ == "__main__":
 
 	##Compare two traces by plotting together, plotting ratio (entry 0 / entry 1), and calculating STD of noise from each and plotting
 	##Required arguments: input files, labels, outFile
-	##Optional arguments: array of datasets [default = 'run1'], xrange max [default = 0.004], bool to display ratio plot [default=True]
+	##Optional arguments: array of datasets [default = 'run1'], xrange max [default = 0.004] - for RMS, ratioBool bool to display ratio plot [default=True] between first and last input files, versionBool bool to compare versions [default=False] - must set desired version in global vars
 	pix=[1,2]
 	trigScanVal=[5,10,20,50,100,200,500,1000]
 	trigScan=[str(i)+"mV" for i in trigScanVal]
@@ -269,13 +214,23 @@ if __name__ == "__main__":
 
 		fileName_scan=[f"102221_amp{p}/0.05Vinj_trigScan_"+str(i)+"mV.h5py" for i in trigScanVal]
 		trigScan.insert(0,f"Trigger Scan, Amp{p}")
-		plotTraces_compare(fileName_scan, trigScan, f"102221_amp{p}_0.05Vinj_scaleScan", xrange=0.03,ratioBool=False)	
+		#plotTraces_compare(fileName_scan, trigScan, f"102221_amp{p}_0.05Vinj_scaleScan", xrange=0.03,ratioBool=False)	
 
+	##when comparing versions, always also include version array
+	##Compare 1V injections between versions
+	fileName_versions=["102221_amp1/1.0Vinj.h5py","030122_amp1/scan_1.0Vinj_2min.h5py","032122_amp1/chip1_1.0Vinj_2min.h5py"]	
+	vers=["1.0V injection, Amp1","v1","v2 orig", "v2 new DACs"]
+	#plotTraces_compare(fileName_versions, vers, f"amp1_1.0Vinj_compareVersions", xrange=0.01, versionBool=True, versionArray=[1,2,2])
+
+	##Compare traces as bench setup is updated
+	filesIn=["032122_amp1/chip1_1.0Vinj_2min.h5py","032522_amp1/newPS_chip2_1.0Vinj_2min.h5py","032522_amp1/newCable_newPS_chip2_1.0Vinj_2min.h5py","032822_amp1/newCable2_newPS_chip2_1.0Vinj_2min.h5py"]
+	labels=["1.0V Injection, Amp 1 Chip 2","Nominal (chip1)", "new PS", "New wires", "New cords"]
+	#plotTraces_compare(filesIn,labels,"amp1_1.0Vinj_benchUpgrade", xrange=0.01, ratioBool=False)
 	
-	versions=["v1","v2"]
-	fileName_versions=["/v1/102221_amp1/1.0Vinj.h5py","/v2/030122_amp1/scan_1.0Vinj_2min.h5py"]	
-	#plotTraces_compareVersions(fileName_versions,versions,xrange=0.01)	
-		
+	##Compare ribbon cables
+	filesIn=["032922_amp1/chip2_baseline_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_0.5in_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_1.7in_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_3.2in_1.0Vinj_2min.h5py"]
+	labels=["1.0V Injection, Amp 1 Chip 2","Baseline", "0.5in", "1.7in", "3.2in"]
+	plotTraces_compare(filesIn,labels,"amp1_chip2_1.0Vinj_ribbonCables", xrange=0.015, ratioBool=False)	
 		
 		
 		
