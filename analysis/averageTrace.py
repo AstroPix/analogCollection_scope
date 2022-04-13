@@ -4,7 +4,14 @@ import h5py
 import scipy
 from scipy.optimize import curve_fit
 
+###############################
+#Global variables
+vers=1
+homeDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/v{vers}/"
+saveDir= f"/Users/asteinhe/AstroPixData/astropixOut_tmp/noise_gain_thresholdScan/v{vers}/"
 
+###############################
+#helper functions
 def get_time(filename, dataset):	
 
 	f = h5py.File(filename, 'r')
@@ -20,6 +27,7 @@ def get_average_trace( filename, dataset ):
 	traces = f[dataset] #baseline subtracted already
 
 	mean=np.mean(traces, axis = 0)
+
 	#reduce number of points for smoother curve
 	mean=mean[0::50]
 	
@@ -69,30 +77,42 @@ def get_height_duration(filename, dataset):
 			duration=1e-8
 		toHist.append(height/duration)
 
-
 	return toHist
+	
+def saveFromInput():
+	inp= 'a'
+	while inp!='y' and inp!='n':
+		print("Save plot? y/n")
+		inp = input()
+	
+	result=True if inp=='y' else False
+	return result
 
 ###############################
 #Runnable choices
-def plotTraces():
-	fileName=["","_dark"]
-	homeDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp"
-	for name in fileName:
-		for pixel in [1, 2]:
-			file=f"{homeDir}/102221_amp{pixel}/0.05Vinj{name}.h5py"
-			print(file)
-			time=get_time(file,'run1')
-			gain1_trace=get_average_trace(file, 'run1')
-			plt.plot(time*1e6, gain1_trace, label=f"Amp{pixel}, gain 1")
-			time2=get_time(file,'run2')
-			gain2_trace=get_average_trace(file, 'run2')
-			plt.plot(time*1e6, gain2_trace, label=f"Amp{pixel}, gain 2")
-		plt.legend(loc="best")
-		plt.xlabel( "time ($\mu$s)" )
-		plt.ylabel("trace - baseline [V]")
-		plt.title(f"0.05V Injection {name}")
-		plt.savefig(f"{homeDir}/noise_gain_threshold/102221_0.05Vinj{name}_traces.pdf")
-		plt.clf()
+def plotTraces(files,labels,fileOut,ds=["run1"]):
+	i=0
+	for f in files:
+		file=homeDir+f
+		j=0
+		while j<len(ds):
+			time=get_time(file,ds[j])
+			trace=get_average_trace(file, ds[j])
+			i+=1
+			plt.plot(time*1e6, trace, label=labels[i])
+			j+=1
+	plt.legend(loc="best")
+	plt.xlabel( "time ($\mu$s)" )
+	plt.ylabel("trace - baseline [V]")
+	plt.title(labels[0])
+	plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+	plt.show() #creates new figure for display
+	savePlt=saveFromInput()
+	if savePlt: #save plt stored with plt.gcf()
+		saveFile=saveDir+fileOut+".pdf"
+		print(f"Saving {saveFile}")
+		plot.savefig(saveFile)	
+	plt.clf()
 		
 
 		
@@ -210,9 +230,21 @@ def plotTraces_compareVersions(fileName,labels, xrange=0.004, ratioBool=True):
 	plt.show()
 		
 		
-		
+###############################
+#Main
 if __name__ == "__main__":
-	fileName=["","_dark"]
+
+	#Plot multiple average traces on one plot
+	#Required arguments: input files, legend labels, output file name
+	#Optional argument: array of datasets to compare (must be in same file: ex. run1 and and run2 from same input file). Default = only "run1"
+	filesIn=["102221_amp1/0.05Vinj.h5py","102221_amp2/0.05Vinj.h5py"]
+	labels=["0.05V Injection","Amp1, gain1", "Amp1, gain2", "Amp2, gain1", "Amp2, gain2"]
+	plotTraces(filesIn,labels,"102221_0.05Vinj_traces",ds=['run1','run2'])
+	filesIn=["102221_amp1/0.05Vinj_dark.h5py","102221_amp2/0.05Vinj_dark.h5py"]
+	labels=["0.05V Injection dark","Amp1, gain1", "Amp1, gain2", "Amp2, gain1", "Amp2, gain2"]
+	plotTraces(filesIn,labels,"102221_0.05Vinj_dark_traces",ds=['run1','run2'])
+
+
 	trigScanVal=[5,10,20,50,100,200,500,1000]
 	fileName_scan=["_trigScan_"+str(i)+"mV" for i in trigScanVal]
 	dataset=["run1","run2"]
@@ -229,7 +261,7 @@ if __name__ == "__main__":
 	#plotTraces_compare([""],dataset,gain)	
 	#plotTraces_compare(fileName,["run1"],dark)	
 	#plotTraces_compare(fileName_scan,["run1"],trigScan,xrange=0.03,ratioBool=False)	
-	plotTraces_compareVersions(fileName_versions,versions,xrange=0.01)	
+	#plotTraces_compareVersions(fileName_versions,versions,xrange=0.01)	
 		
 		
 		
