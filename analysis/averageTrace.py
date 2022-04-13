@@ -113,56 +113,65 @@ def plotTraces(files,labels,fileOut,ds=["run1"]):
 		print(f"Saving {saveFile}")
 		plot.savefig(saveFile)	
 	plt.clf()
-		
 
 		
 #Compare two traces by plotting together, plotting ratio, and calculating STD of noise from each and plotting
-def plotTraces_compare(fileName, dataset,labels, xrange=0.004, ratioBool=True):
-	for pixel in [1, 2]:
-		traces=[]
-		ratio=None
-		noiseRMS=[]
-		if ratioBool:
-			fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [2,1]})
-		else:
-			#cheat so that ratio plot is not displayed in what is technically a second subfigure
-			fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [100,1]})
-		fig.suptitle(f"0.05V Injection, pixel {pixel}")
-		for name in fileName:
-			for set in dataset:
-				file=f"{homeDir}/102221_amp{pixel}/0.05Vinj{name}.h5py"
-				print(file)
-				time=get_time(file,'run1')
-				trace=get_average_trace(file, set)
-				binCenters, hist= get_baseline_plt(file, set, xrange)
-				noiseRMS.append(binCenters)
-				noiseRMS.append(hist)
-				axs[0].plot(time*1e6, trace, label=f"Amp{pixel} {name}")
-				traces.append(trace)
-		ratio=traces[0]/traces[1]
-		axs[0].legend(loc="best")
-		plt.xlabel( "time ($\mu$s)" )
-		plt.setp(axs[0], ylabel="trace - baseline [V]")
-		if ratioBool:
-			axs[1].plot(time*1e6,ratio)
-			plt.setp(axs[1],ylabel=f"Ratio {labels[1]}/{labels[2]}")
-		#plt.show()
-		plt.savefig(f"{homeDir}/noise_gain_threshold/102221_amp{pixel}_0.05Vinj_traces_compare{labels[0]}.pdf")
-		plt.clf()
-	
-		labelIndex=1
-		for i in range(len(noiseRMS)): 
-			if i%2!=0: #Find end of plotting pair
-				plt.plot(noiseRMS[i-1],noiseRMS[i],label=labels[labelIndex])
-				labelIndex+=1
-		#plt.plot(noiseRMS[2],noiseRMS[3],label=labels[2])
-		plt.title(f"Noise RMS pixel{pixel}")
-		plt.xlabel("RMS [V]")
-		plt.ylabel("counts")
-		plt.legend(loc="best")
-		#plt.show()
-		plt.savefig(f"{homeDir}/noise_gain_threshold/102221_amp{pixel}_0.05Vinj_noiseRMS_{labels[0]}.pdf")
-		plt.clf()
+def plotTraces_compare(fileName,labels, fileOut, ds=["run1"], xrange=0.004, ratioBool=True):
+	traces=[]
+	ratio=None
+	noiseRMS=[]
+	if ratioBool:
+		fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [2,1]})
+	else:
+		#cheat so that ratio plot is not displayed in what is technically a second subfigure
+		fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [100,1]})
+	fig.suptitle(labels[0])
+	i=0
+	for f in fileName:
+		file=homeDir+f
+		for set in ds:
+			time=get_time(file,set)
+			trace=get_average_trace(file, set)
+			binCenters, hist= get_baseline_plt(file, set, xrange)
+			noiseRMS.append(binCenters)
+			noiseRMS.append(hist)
+			i+=1
+			axs[0].plot(time*1e6, trace, label=labels[i])
+			traces.append(trace)
+	ratio=traces[0]/traces[1]
+	axs[0].legend(loc="best")
+	plt.xlabel( "time ($\mu$s)" )
+	plt.setp(axs[0], ylabel="trace - baseline [V]")
+	if ratioBool:
+		axs[1].plot(time*1e6,ratio)
+		plt.setp(axs[1],ylabel=f"Ratio {labels[1]}/{labels[2]}")
+	plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+	plt.show() #creates new figure for display
+	savePlt=saveFromInput()
+	if savePlt: #save plt stored with plt.gcf()
+		saveFile=saveDir+fileOut+".pdf"
+		print(f"Saving {saveFile}")
+		plot.savefig(saveFile)	
+	plt.clf()
+
+	labelIndex=1
+	for i in range(len(noiseRMS)): 
+		if i%2!=0: #Find end of plotting pair
+			plt.plot(noiseRMS[i-1],noiseRMS[i],label=labels[labelIndex])
+			labelIndex+=1
+	#plt.plot(noiseRMS[2],noiseRMS[3],label=labels[2])
+	plt.title(f"Noise RMS - {labels[0]}")
+	plt.xlabel("RMS [V]")
+	plt.ylabel("counts")
+	plt.legend(loc="best")
+	plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+	plt.show() #creates new figure for display
+	savePlt=saveFromInput()
+	if savePlt: #save plt stored with plt.gcf()
+		saveFile=saveDir+fileOut+"_noiseRMS.pdf"
+		print(f"Saving {saveFile}")
+		plot.savefig(saveFile)	
+	plt.clf()
 			
 #Compare two traces by plotting together, plotting ratio, and calculating correlation of height and duration
 def plotTraces_compareVersions(fileName,labels, xrange=0.004, ratioBool=True):
@@ -234,33 +243,37 @@ def plotTraces_compareVersions(fileName,labels, xrange=0.004, ratioBool=True):
 #Main
 if __name__ == "__main__":
 
-	#Plot multiple average traces on one plot
-	#Required arguments: input files, legend labels, output file name
-	#Optional argument: array of datasets to compare (must be in same file: ex. run1 and and run2 from same input file). Default = only "run1"
-	filesIn=["102221_amp1/0.05Vinj.h5py","102221_amp2/0.05Vinj.h5py"]
-	labels=["0.05V Injection","Amp1, gain1", "Amp1, gain2", "Amp2, gain1", "Amp2, gain2"]
-	plotTraces(filesIn,labels,"102221_0.05Vinj_traces",ds=['run1','run2'])
-	filesIn=["102221_amp1/0.05Vinj_dark.h5py","102221_amp2/0.05Vinj_dark.h5py"]
-	labels=["0.05V Injection dark","Amp1, gain1", "Amp1, gain2", "Amp2, gain1", "Amp2, gain2"]
-	plotTraces(filesIn,labels,"102221_0.05Vinj_dark_traces",ds=['run1','run2'])
+	##Plot multiple average traces on one plot
+	##Required arguments: input files, legend labels, output file name
+	##Optional argument: array of datasets to compare (must be in same file: ex. run1 and and run2 from same input file). Default = only "run1"
+	#filesIn=["102221_amp1/0.05Vinj.h5py","102221_amp2/0.05Vinj.h5py"]
+	#labels=["0.05V Injection","Amp1, gain1", "Amp1, gain2", "Amp2, gain1", "Amp2, gain2"]
+	#plotTraces(filesIn,labels,"102221_0.05Vinj_traces",ds=['run1','run2'])
+	#filesIn=["102221_amp1/0.05Vinj_dark.h5py","102221_amp2/0.05Vinj_dark.h5py"]
+	#labels=["0.05V Injection dark","Amp1, gain1", "Amp1, gain2", "Amp2, gain1", "Amp2, gain2"]
+	#plotTraces(filesIn,labels,"102221_0.05Vinj_dark_traces",ds=['run1','run2'])
 
-
+	##Compare two traces by plotting together, plotting ratio (entry 0 / entry 1), and calculating STD of noise from each and plotting
+	##Required arguments: input files, labels, outFile
+	##Optional arguments: array of datasets [default = 'run1'], xrange max [default = 0.004], bool to display ratio plot [default=True]
+	pix=[1,2]
 	trigScanVal=[5,10,20,50,100,200,500,1000]
-	fileName_scan=["_trigScan_"+str(i)+"mV" for i in trigScanVal]
-	dataset=["run1","run2"]
-	dark=["","Light","Dark"]
-	gain=["Gain","gain1","gain2"]
 	trigScan=[str(i)+"mV" for i in trigScanVal]
-	trigScan.insert(0,"scaleScan")
-	homeDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp"
+	for p in pix:
+		filesIn=[f"102221_amp{p}/0.05Vinj.h5py",f"102221_amp{p}/0.05Vinj_dark.h5py"]
+		dark=[f"0.05V Injection Amp{p}","Light","Dark"]
+		#plotTraces_compare(filesIn, dark, f"102221_amp{p}_0.05Vinj_traces_compare")	
+		
+		gain=[f"0.05V Injection (Light) Amp{p}","gain1","gain2"]
+		#plotTraces_compare([f"102221_amp{p}/0.05Vinj.h5py"], gain,f"102221_amp{p}_0.05Vinj_traces_compareGain" ,ds=['run1','run2'])	
+
+		fileName_scan=[f"102221_amp{p}/0.05Vinj_trigScan_"+str(i)+"mV.h5py" for i in trigScanVal]
+		trigScan.insert(0,f"Trigger Scan, Amp{p}")
+		plotTraces_compare(fileName_scan, trigScan, f"102221_amp{p}_0.05Vinj_scaleScan", xrange=0.03,ratioBool=False)	
+
+	
 	versions=["v1","v2"]
-	
-	fileName_versions=["/v1/102221_amp1/1.0Vinj.h5py","/v2/030122_amp1/scan_1.0Vinj_2min.h5py"]
-	
-	#plotTraces()		
-	#plotTraces_compare([""],dataset,gain)	
-	#plotTraces_compare(fileName,["run1"],dark)	
-	#plotTraces_compare(fileName_scan,["run1"],trigScan,xrange=0.03,ratioBool=False)	
+	fileName_versions=["/v1/102221_amp1/1.0Vinj.h5py","/v2/030122_amp1/scan_1.0Vinj_2min.h5py"]	
 	#plotTraces_compareVersions(fileName_versions,versions,xrange=0.01)	
 		
 		
