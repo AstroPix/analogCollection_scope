@@ -218,9 +218,11 @@ if __name__ == "__main__":
 
 	##when comparing versions, always also include version array
 	##Compare 1V injections between versions
-	fileName_versions=["102221_amp1/1.0Vinj.h5py","030122_amp1/scan_1.0Vinj_2min.h5py","032122_amp1/chip1_1.0Vinj_2min.h5py"]	
-	vers=["1.0V injection, Amp1","v1","v2 orig", "v2 new DACs"]
-	#plotTraces_compare(fileName_versions, vers, f"amp1_1.0Vinj_compareVersions", xrange=0.01, versionBool=True, versionArray=[1,2,2])
+	inj=[0,8]
+	for i in inj:
+		fileName_versions=[f"102221_amp1/1.{i}Vinj.h5py",f"030122_amp1/scan_1.{i}Vinj_2min.h5py",f"032122_amp1/chip1_1.{i}Vinj_2min.h5py"]	
+		vers=[f"1.{i}V injection, Amp1","v1","v2 orig", "v2 new DACs"]
+		plotTraces_compare(fileName_versions, vers, f"amp1_1.{i}Vinj_compareVersions", xrange=0.02, versionBool=True, versionArray=[1,2,2])
 
 	##Compare traces as bench setup is updated
 	filesIn=["032122_amp1/chip1_1.0Vinj_2min.h5py","032522_amp1/newPS_chip2_1.0Vinj_2min.h5py","032522_amp1/newCable_newPS_chip2_1.0Vinj_2min.h5py","032822_amp1/newCable2_newPS_chip2_1.0Vinj_2min.h5py"]
@@ -230,7 +232,7 @@ if __name__ == "__main__":
 	##Compare ribbon cables
 	filesIn=["032922_amp1/chip2_baseline_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_0.5in_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_1.7in_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_3.2in_1.0Vinj_2min.h5py"]
 	labels=["1.0V Injection, Amp 1 Chip 2","Baseline", "0.5in", "1.7in", "3.2in"]
-	plotTraces_compare(filesIn,labels,"amp1_chip2_1.0Vinj_ribbonCables", xrange=0.015, ratioBool=False)	
+	#plotTraces_compare(filesIn,labels,"amp1_chip2_1.0Vinj_ribbonCables", xrange=0.015, ratioBool=False)	
 		
 		
 		
