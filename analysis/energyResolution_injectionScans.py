@@ -7,13 +7,17 @@ import sys,os,glob
 sys.path.insert(1, 'energyCalibration/')
 import enResFitting
 
-
+#######################
+#Global variables
 savePlots=True
 #Fit peak heights or integral value (scaled by scope resolution)
 #If traceInteg is true, use integral. If false, use peak height
 traceInteg = True
 v1=False #if v1=False, generate plots for v2
 
+
+#######################
+#Helper functions
 def injScanPlot(inj, data, err, dataName, saveto, chip, fit=False):
 	
 	dataNameStr=dataName.replace(" ", "")
@@ -26,9 +30,12 @@ def injScanPlot(inj, data, err, dataName, saveto, chip, fit=False):
 	if v1:
 		plt.title(f"Chip00{chip}")
 		labels=['Amp1','Amp2']
+		chip=f"_chip{chip}"
 	else:
 		plt.title("v2")
-		labels=['Chip1','Chip2']
+		#labels=['Chip1','Chip2']
+		labels=['Orig DACs', 'Updated DACs']
+		chip=""
 	plt.errorbar(inj,amp1_p,yerr=err1,label=labels[0],marker="o",linestyle='None',color='r')
 	plt.errorbar(inj,amp2_p,yerr=err2,label=labels[1],marker="o",linestyle='None')
 
@@ -36,10 +43,10 @@ def injScanPlot(inj, data, err, dataName, saveto, chip, fit=False):
 	plt.legend(loc="best")
 	if traceInteg:
 		plt.ylabel(f"{dataName} (from integral)")
-		plt.savefig(f"{saveto}integ_chip{chip}_{dataNameStr}.pdf") if savePlots else plt.show()
+		plt.savefig(f"{saveto}integ{chip}_{dataNameStr}.pdf") if savePlots else plt.show()
 	else:
 		plt.ylabel(f"{dataName} (from peak height)")
-		plt.savefig(f"{saveto}peaks_chip{chip}_{dataNameStr}.pdf") if savePlots else plt.show()
+		plt.savefig(f"{saveto}peaks{chip}_{dataNameStr}.pdf") if savePlots else plt.show()
 	plt.clf()
 
 	if fit:
@@ -54,18 +61,21 @@ def injScanPlot(inj, data, err, dataName, saveto, chip, fit=False):
 
 	
 ###########################################################################
+#MAIN
 #Lowest injection values (0.1 - 0.3V) have scope scalings that are too large relative to the distribution
-injection=[i*0.1 for i in range(5,14)] #1,19
+injection=[i*0.1 for i in range(1,19)] #1,19
 homeDir = "/Users/asteinhe/AstroPixData/astropixOut_tmp"
 if v1:
 	saveDir = ["/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v1/chip003/","/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v1/chip003/"]
 	runList = [[102221,1],[102221,2]] #day of run, pixel number #v1
 else:
-	saveDir = ["/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip1/","/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip2/"]
-	runList=[['030122',1],['030322',1]]
+	#saveDir = ["/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip1/origDACs/","/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip2/origDACs/"]
+	#runList=[['030122',1],['030322',1]] #orig DACs settings
+	saveDir = ["/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip1/origDACs/","/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip1/"]
+	runList=[['030122',1],['032122',1]] #orig vs updated DACs settings, chip1
 binsize=0.002 
 if traceInteg:
-	binsize=0.01
+	binsize=0.05
 elif v1:
 	binsize=0 #default - based off scope resolution
 
@@ -82,7 +92,8 @@ for i,element in enumerate(runList):
 		elif i==0: #v2 chip1
 			file=f"{homeDir}/v2/{element[0]}_amp{element[1]}/scan_{inj:.1f}Vinj_2min.h5py"
 		else: #v2 chip2
-			file=f"{homeDir}/v2/{element[0]}_amp{element[1]}/scan_chip2_{inj:.1f}Vinj_2min.h5py"
+			#file=f"{homeDir}/v2/{element[0]}_amp{element[1]}/scan_chip2_{inj:.1f}Vinj_2min.h5py"
+			file=f"{homeDir}/v2/{element[0]}_amp{element[1]}/chip1_{inj:.1f}Vinj_2min.h5py"
 		settings=[file, f"{inj:.1f}V-injection", element[1], inj, savePlots, chip]
 		popt, enRes, pcov = enResFitting.enResPlot(settings, savedir=saveDir[i], integral=traceInteg, injection=True, binSize=binsize)
 		enResFitting.printParams(settings, popt, enRes, pcov, savedir=saveDir[i], integral=traceInteg, injection=True)
@@ -96,9 +107,14 @@ for i,element in enumerate(runList):
 	sigmaArr.append(sigmaArr_tmp)
 	muErrArr.append(muErrArr_tmp)
 	sigErrArr.append(sigErrArr_tmp)
-#plot two pixels in each chip against each other				
-injScanPlot(injection, enResArr, np.zeros(len(enResArr)), "Energy Resolution [\%]", saveDir[0], chip)#no easily returned value for enResErr
-injScanPlot(injection, muArr, muErrArr, "Fit Mean [V]",saveDir[0],chip,fit=True)		
+#plot v1 pixels or v2 chips against each other		
+if v1:
+	tosave=saveDir[0]
+else:
+	#tosave="/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/origDACs"
+	tosave="/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/"
+injScanPlot(injection, enResArr, np.zeros(len(enResArr)), "Energy Resolution [\%]", tosave, chip)#no easily returned value for enResErr
+injScanPlot(injection, muArr, muErrArr, "Fit Mean [V]",tosave,chip,fit=True)		
 		
 if v1:	
 	#compare 2 pixels of chip4
