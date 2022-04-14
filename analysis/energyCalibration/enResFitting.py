@@ -470,10 +470,8 @@ def getCalibVals_fromFit(inDir, fit, integral=False):
 		dsName="peaksEnRes"
 
 	os.chdir(inDir+fit+'/')
-	print(f"{inDir}{fit}")
 	newfile = glob.glob('*'+dsName+'*.txt') #returns array with length 1
 	for found in newfile:
-		print(found)
 		if "edge" in found:
 			continue
 		energyList.append(float(found.split('_')[1][:-4]))
