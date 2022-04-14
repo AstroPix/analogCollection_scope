@@ -6,12 +6,16 @@ from scipy.optimize import curve_fit
 
 ###############################
 #Global variables
+###############################
+
 vers=2
 homeDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/v{vers}/"
 saveDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/noise_gain_thresholdScan/v{vers}/"
 
 ###############################
 #helper functions
+###############################
+
 def get_time(filename, dataset):	
 
 	f = h5py.File(filename, 'r')
@@ -90,6 +94,8 @@ def saveFromInput():
 
 ###############################
 #Runnable choices
+###############################
+
 def plotTraces(files,labels,fileOut,ds=["run1"]):
 	i=0
 	for f in files:
@@ -186,6 +192,8 @@ def plotTraces_compare(fileName,labels, fileOut, ds=["run1"], xrange=0.004, rati
 		
 ###############################
 #Main
+###############################
+
 if __name__ == "__main__":
 
 	##Plot multiple average traces on one plot

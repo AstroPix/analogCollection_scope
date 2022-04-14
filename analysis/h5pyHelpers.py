@@ -4,14 +4,20 @@ import numpy as np
 import scipy
 from scipy.optimize import curve_fit
 
+#################################
 #Global variables
+#################################
+
 vers=2
 traceInteg=False
 homeDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/v{vers}/"
 saveDir= f"/Users/asteinhe/AstroPixData/astropixOut_tmp/h5pyHelpers/v{vers}/"
 
 
+#################################
 #fit functions
+#################################
+
 def Gauss(x, A, mu, sigma):
     return A*np.exp(-(x-mu)**2/(2.0*sigma**2))
     
@@ -24,7 +30,11 @@ def saveFromInput():
 	result=True if inp=='y' else False
 	
 	return result
-    
+   
+#################################
+#Helper functions
+#################################
+ 
 #display histogram to play with
 def histDisplay(f_in,ds='run1_peaks', xBinWidth=0.002, xlabel="", ylog=False):
 	f=h5py.File(homeDir+f_in, 'r')
