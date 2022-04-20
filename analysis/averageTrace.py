@@ -8,7 +8,7 @@ from scipy.optimize import curve_fit
 #Global variables
 ###############################
 
-vers=2
+vers=1
 homeDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/v{vers}/"
 saveDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/noise_gain_thresholdScan/v{vers}/"
 
@@ -197,14 +197,19 @@ def plotTraces_compare(fileName,labels, fileOut, ds=["run1"], xrange=0.004, rati
 if __name__ == "__main__":
 
 	##Plot multiple average traces on one plot
-	##Required arguments: input files, legend labels, output file name
+	##Required arguments: input files, legend labels [first entry = plot title], output file name
 	##Optional argument: array of datasets to compare (must be in same file: ex. run1 and and run2 from same input file). Default = only "run1"
-	#filesIn=["102221_amp1/0.05Vinj.h5py","102221_amp2/0.05Vinj.h5py"]
+	#dfilesIn=["102221_amp1/0.05Vinj.h5py","102221_amp2/0.05Vinj.h5py"]
 	#labels=["0.05V Injection","Amp1, gain1", "Amp1, gain2", "Amp2, gain1", "Amp2, gain2"]
 	#plotTraces(filesIn,labels,"102221_0.05Vinj_traces",ds=['run1','run2'])
 	#filesIn=["102221_amp1/0.05Vinj_dark.h5py","102221_amp2/0.05Vinj_dark.h5py"]
 	#labels=["0.05V Injection dark","Amp1, gain1", "Amp1, gain2", "Amp2, gain1", "Amp2, gain2"]
 	#plotTraces(filesIn,labels,"102221_0.05Vinj_dark_traces",ds=['run1','run2'])
+	
+	#filesIn=["102221_amp1/1.0Vinj.h5py","102221_amp2/1.0Vinj.h5py", "120721_amp1/chip004_AC_1.0Vinj_2min.h5py","120721_amp2/chip004_AC_1.0Vinj_2min.h5py"]
+	#labels=["1.0V Injection","Chip003, amp1", "Chip003, amp2", "Chip004, amp1", "Chip004, amp2"]
+	#plotTraces(filesIn,labels,"v1_1.0Vinj_compareAllPixels")
+	
 
 	##Compare two traces by plotting together, plotting ratio (entry 0 / entry 1), and calculating STD of noise from each and plotting
 	##Required arguments: input files, labels, outFile
