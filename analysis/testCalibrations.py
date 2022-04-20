@@ -13,12 +13,12 @@ import enResFitting
 
 savePlots=False #If false, get option to save each plot upon viewing. If true, plots are not displayed and all automatically saved
 traceInteg=False
-v1=False
-chip=2 #Can be: 3, 4 [for v1], 1, 2 [for v2]
+v1=True
+chip=4 #Can be: 3, 4 [for v1], 1, 2 [for v2]
 label = "integ" if traceInteg else "peaks"
 
 #Choose what to plot
-allPlots=False #overrides all other options
+allPlots=True #overrides all other options
 rawEnergyResolution=False #plot energy resolution 
 rawMuSigma=False #plot components of energy calibration - mu and sigma
 calibrationCurve=False #plot calibration curves
@@ -27,7 +27,9 @@ calibratedMuEnRes=False #compare calib functions - mean and enRes
 #AMANDA - make more robust in pulling fit info AND improve chi2 calculation
 calibratedMuChi2=False #compare calib functions - ratio of calibrated/expected mean and fit chi2/ndof
 calibratedSigma=False #compare calib functions - Gaussian sigma
-calibratedMuEnResScan=True #For one calib function, plot calibrated vs expected energy for all sources with color bar indicating energy resolution. Optional ratio plot
+calibratedMuEnResScan=False #For one calib function, plot calibrated vs expected energy for all sources with color bar indicating energy resolution. Optional ratio plot
+
+#IF making v1 plots, remember to check data and calibration pixel arrays at end of Main
 
 ###############################
 # Helper functions
@@ -296,6 +298,7 @@ else:
 if v1:
 	dataPixel=[1,2]
 	calibPixel=[1,2]
+	#calibPixel=[2,1]
 	dataDirCalib=[f"/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v1_chip00{chip}/amp{dataPixel[0]}_peaks/amp{calibPixel[0]}Calib/",
 		f"/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v1_chip00{chip}/amp{dataPixel[1]}_peaks/amp{calibPixel[1]}Calib/"]
 	sources=["Cad","Am","Cobalt57-calib_122.06"] if chip==3 else ["Cad","Cobalt57-calib_122.06"]
