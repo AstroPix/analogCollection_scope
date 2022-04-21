@@ -32,7 +32,7 @@ def get_binned_traces (binArr, filename, dataset):
 	peaks=np.array(f[f"{dataset}_peaks"])[:events] #pull first peak values that are associated with the recorded traces
 
 	#return 2d array containing indices of entries for each bin
-	indices=[[] for j in range(3)]
+	indices=[[] for j in range(len(binArr)+1)] 
 	for i,peak in enumerate(peaks):
 		if peak<binArr[0]:
 			indices[0].append(i)
@@ -42,7 +42,7 @@ def get_binned_traces (binArr, filename, dataset):
 			indices[2].append(i)	
 	return indices
 	
-def get_average_trace( filename, dataset, bins ):
+def get_average_trace( filename, dataset, bins):
 
 	if bins:
 		binArr=[0.09,0.2]#bin high edges, +max
@@ -79,7 +79,6 @@ def get_average_trace( filename, dataset, bins ):
 		mean.append(mean_low[0::50])
 		mean.append(mean_mid[0::50])
 		mean.append(mean_high[0::50])
-		
 	
 	return mean
 
@@ -122,25 +121,60 @@ def saveFromInput():
 	result=True if inp=='y' else False
 	return result
 
+def plotBinnedTraces(file, fileOut, ds, bins, strBins, aveTraces):
+
+	f = h5py.File(file, 'r')
+	time=get_time(file, ds)
+	allTraces = f[ds] #baseline subtracted already
+	binIndices=get_binned_traces(bins,file,ds)
+	colors=['r','b','g']
+	
+	binnedTraces=[[] for j in range(len(strBins))]
+	for i,trace in enumerate(allTraces):
+		if i in binIndices[0]:
+			binnedTraces[0].append(trace)
+		elif i in binIndices[1]:
+			binnedTraces[1].append(trace)
+		else:
+			binnedTraces[2].append(trace)
+
+	#skip first average trace (contains average of full file)
+	for j,trace in enumerate(aveTraces[1:]):
+		plt.clf()
+		plt.plot(time*1e6, trace, linewidth=3, color="black")
+		for eachTrace in binnedTraces[j]:
+			plt.plot(time*1e6, eachTrace[0::50], alpha=0.1, color=colors[j]) 
+		plt.title(f"Bin {strBins[j]}")
+		plt.xlabel( "time ($\mu$s)" )
+		plt.ylabel("trace - baseline [V]")
+		plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+		plt.show() #creates new figure for display
+		savePlt=saveFromInput()
+		if savePlt: #save plt stored with plt.gcf()
+			saveFile=saveDir+fileOut+"_bin"+strBins[j]+".pdf"
+			print(f"Saving {saveFile}")
+			plot.savefig(saveFile)	
+		
+
 ###############################
 #Runnable choices
 ###############################
 
 def plotTraces(files,labels,fileOut,ds=["run1"],bins=False):
+
 	i=0
 	
 	#update labels for legend
 	if bins:
-		binArr=["0-0.09", "0.09-0.2", "0.2+"]
+		strBinArr=["0-0.09", "0.09-0.2", "0.2+"]
 		for index,label in enumerate(labels):
 			if index==0:
 				continue
 				#plot title - not related to legend
 			labelArr=[label]
-			for binstr in binArr:
+			for binstr in strBinArr:
 				labelArr.append(labelArr[0]+"- Bin "+binstr)
 			labels[index]=labelArr
-			
 			
 	#for each file, calculate average trace (also calculate in bins, if bool is true)
 	for f in files:
@@ -152,7 +186,7 @@ def plotTraces(files,labels,fileOut,ds=["run1"],bins=False):
 			i+=1
 			for k,aveTrace in enumerate(trace):
 				plt.plot(time*1e6, aveTrace, label=labels[i][k])
-			j+=1
+			j+=1	
 	#plot average traces together
 	plt.legend(loc="best")
 	plt.xlabel( "time ($\mu$s)" )
@@ -167,8 +201,14 @@ def plotTraces(files,labels,fileOut,ds=["run1"],bins=False):
 		plot.savefig(saveFile)	
 	plt.clf()
 
-	
-		
+	#plot individual traces along with average
+	if bins:
+		for f in files:
+			file=homeDir+f
+			for dataset in ds:
+				trace=get_average_trace(file, dataset, bins)
+				plotBinnedTraces(file, fileOut, dataset, [0.09,0.2], strBinArr, trace) #bin array is high end of each bin - do not include infinity
+
 		
 ###############################
 #Main
@@ -184,7 +224,6 @@ if __name__ == "__main__":
 	labels=["1.8V Injection in HI beam","Chip003, amp1"]
 	plotTraces(filesIn,labels,"v2_1.8Vinj_chip3_HIbeam_ion1",bins=True)
 	
-
 
 #individual traces that feed into average bins
 #one plot - average trace binned in peak height [0-0.09,0.09-0.2,0.2+] (trigger at 0.09)
