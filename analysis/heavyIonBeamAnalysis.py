@@ -25,6 +25,23 @@ def get_time(filename, dataset):
 	
 	return time
 	
+def get_binned_traces (binArr, filename, dataset):
+	f = h5py.File(filename, 'r')
+	traces = f[dataset]
+	events=len(traces)
+	peaks=np.array(f[f"{dataset}_peaks"])[:events] #pull first peak values that are associated with the recorded traces
+
+	#return 2d array containing indices of entries for each bin
+	indices=[[] for j in range(3)]
+	for i,peak in enumerate(peaks):
+		if peak<binArr[0]:
+			indices[0].append(i)
+		elif peak<binArr[1]:
+			indices[1].append(i)
+		else:
+			indices[2].append(i)	
+	return indices
+	
 def get_average_trace( filename, dataset, bins ):
 
 	if bins:
@@ -39,23 +56,20 @@ def get_average_trace( filename, dataset, bins ):
 	
 	#if breaking into bins, calculate average for each bin
 	if bins:
-		events=len(traces)
-		peaks=np.array(f[f"{dataset}_peaks"])[:events] #pull first peak values that are associated with the recorded traces
 		traces_low=[]
 		traces_mid=[]
 		traces_high=[]
 		
-		test_i=0
-		for trace,peak in zip(traces,peaks):
-			if peak<binArr[0]:
+		binIndices=get_binned_traces(binArr,filename,dataset)
+		
+		for i,trace in enumerate(traces):
+			if i in binIndices[0]:
 				traces_low.append(trace)
-			elif peak<binArr[1]:
+			elif i in binIndices[1]:
 				traces_mid.append(trace)
 			else:
 				traces_high.append(trace)
-				print(f"High trace: element {test_i}")
-			test_i+=1
-				
+		
 		print(f"Contents of bins \n {len(traces)} total recorded traces. \n Low bin: {len(traces_low)} \n Mid bin: {len(traces_mid)} \n High bin: {len(traces_high)}")
 	
 		mean_low=np.mean(traces_low,axis=0)
@@ -66,7 +80,6 @@ def get_average_trace( filename, dataset, bins ):
 		mean.append(mean_mid[0::50])
 		mean.append(mean_high[0::50])
 		
-		mean.append(traces[59][0::50])
 	
 	return mean
 
@@ -128,7 +141,6 @@ def plotTraces(files,labels,fileOut,ds=["run1"],bins=False):
 				labelArr.append(labelArr[0]+"- Bin "+binstr)
 			labels[index]=labelArr
 			
-			labels[1].append("trigger before tall one")
 			
 	#for each file, calculate average trace (also calculate in bins, if bool is true)
 	for f in files:
@@ -155,74 +167,7 @@ def plotTraces(files,labels,fileOut,ds=["run1"],bins=False):
 		plot.savefig(saveFile)	
 	plt.clf()
 
-		
-#Compare two traces by plotting together, plotting ratio, and calculating STD of noise from each and plotting
-def plotTraces_compare(fileName,labels, fileOut, ds=["run1"], xrange=0.004, ratioBool=True, versionBool=False, versionArray=[]):
-	traces=[]
-	ratio=None
-	noiseRMS=[]
-	if versionBool:
-		global saveDir
-		saveDir="/Users/asteinhe/AstroPixData/astropixOut_tmp/noise_gain_thresholdScan/"
-	if ratioBool:
-		fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [2,1]})
-	else:
-		#cheat so that ratio plot is not displayed in what is technically a second subfigure
-		fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [100,1]})
-	fig.suptitle(labels[0])
-	i=0
-	if versionBool and len(versionArray)==0:
-		print("ERROR - Must input array of AstroPix version associated with input files if versionBool=True")
-		return
-	for v,f in enumerate(fileName):
-		if versionBool:
-			global homeDir
-			homeDir=f"/Users/asteinhe/AstroPixData/astropixOut_tmp/v{versionArray[v]}/"
-		file=homeDir+f
-		print(file)
-		for set in ds:
-			time=get_time(file,set)
-			trace=get_average_trace(file, set)
-			binCenters, hist= get_baseline_plt(file, set, xrange)
-			noiseRMS.append(binCenters)
-			noiseRMS.append(hist)
-			i+=1
-			axs[0].plot(time*1e6, trace, label=labels[i])
-			traces.append(trace)
-	ratio=traces[0]/traces[-1]
-	axs[0].legend(loc="best")
-	plt.xlabel( "time ($\mu$s)" )
-	plt.setp(axs[0], ylabel="trace - baseline [V]")
-	if ratioBool:
-		axs[1].plot(time*1e6,ratio)
-		plt.setp(axs[1],ylabel=f"Ratio {labels[1]}/{labels[-1]}")
-	plot=plt.gcf() #get current figure - saves fig in case savePlt==True
-	plt.show() #creates new figure for display
-	savePlt=saveFromInput()
-	if savePlt: #save plt stored with plt.gcf()
-		saveFile=saveDir+fileOut+".pdf"
-		print(f"Saving {saveFile}")
-		plot.savefig(saveFile)	
-	plt.clf()
-
-	labelIndex=1
-	for i in range(len(noiseRMS)): 
-		if i%2!=0: #Find end of plotting pair [binCenters,hist]
-			plt.plot(noiseRMS[i-1],noiseRMS[i],label=labels[labelIndex])
-			labelIndex+=1
-	plt.title(f"Noise RMS - {labels[0]}")
-	plt.xlabel("RMS [V]")
-	plt.ylabel("counts")
-	plt.legend(loc="best")
-	plot=plt.gcf() #get current figure - saves fig in case savePlt==True
-	plt.show() #creates new figure for display
-	savePlt=saveFromInput()
-	if savePlt: #save plt stored with plt.gcf()
-		saveFile=saveDir+fileOut+"_noiseRMS.pdf"
-		print(f"Saving {saveFile}")
-		plot.savefig(saveFile)	
-	plt.clf()
-
+	
 		
 		
 ###############################
@@ -240,25 +185,6 @@ if __name__ == "__main__":
 	plotTraces(filesIn,labels,"v2_1.8Vinj_chip3_HIbeam_ion1",bins=True)
 	
 
-	##Compare two traces by plotting together, plotting ratio (entry 0 / entry 1), and calculating STD of noise from each and plotting
-	##Required arguments: input files, labels, outFile
-	##Optional arguments: array of datasets [default = 'run1'], xrange max [default = 0.004] - for RMS, ratioBool bool to display ratio plot [default=True] between first and last input files, versionBool bool to compare versions [default=False] - must set desired version in global vars
-	"""
-	pix=[1,2]
-	trigScanVal=[5,10,20,50,100,200,500,1000]
-	trigScan=[str(i)+"mV" for i in trigScanVal]
-	for p in pix:
-		filesIn=[f"102221_amp{p}/0.05Vinj.h5py",f"102221_amp{p}/0.05Vinj_dark.h5py"]
-		dark=[f"0.05V Injection Amp{p}","Light","Dark"]
-		#plotTraces_compare(filesIn, dark, f"102221_amp{p}_0.05Vinj_traces_compare")	
-		
-		gain=[f"0.05V Injection (Light) Amp{p}","gain1","gain2"]
-		#plotTraces_compare([f"102221_amp{p}/0.05Vinj.h5py"], gain,f"102221_amp{p}_0.05Vinj_traces_compareGain" ,ds=['run1','run2'])	
-
-		fileName_scan=[f"102221_amp{p}/0.05Vinj_trigScan_"+str(i)+"mV.h5py" for i in trigScanVal]
-		trigScan.insert(0,f"Trigger Scan, Amp{p}")
-		#plotTraces_compare(fileName_scan, trigScan, f"102221_amp{p}_0.05Vinj_scaleScan", xrange=0.03,ratioBool=False)	
-	"""
 
 #individual traces that feed into average bins
 #one plot - average trace binned in peak height [0-0.09,0.09-0.2,0.2+] (trigger at 0.09)
