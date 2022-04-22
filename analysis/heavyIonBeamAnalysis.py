@@ -86,13 +86,21 @@ def get_average_trace( filename, dataset, bins, addBaseline):
 		
 		print(f"Contents of bins \n {len(scaledTraces)} total recorded scaledTraces. \n Low bin: {len(scaledTraces_low)} \n Mid bin: {len(scaledTraces_mid)} \n High bin: {len(scaledTraces_high)}")
 	
-		mean_low=np.mean(scaledTraces_low,axis=0)
-		mean_mid=np.mean(scaledTraces_mid,axis=0)
-		mean_high=np.mean(scaledTraces_high,axis=0)
-		
-		mean.append(mean_low[0::50])
-		mean.append(mean_mid[0::50])
-		mean.append(mean_high[0::50])
+		try:
+			mean_low=np.mean(scaledTraces_low,axis=0)
+			mean.append(mean_low[0::50])
+		except IndexError: #if array is empty
+			mean.append(np.zeros(200))
+		try:
+			mean_mid=np.mean(scaledTraces_mid,axis=0)
+			mean.append(mean_mid[0::50])
+		except IndexError: #if array is empty
+			mean.append(np.zeros(200))
+		try:
+			mean_high=np.mean(scaledTraces_high,axis=0)
+			mean.append(mean_high[0::50])
+		except IndexError: #if array is empty
+			mean.append(np.zeros(200))
 	
 	return mean
 
@@ -456,7 +464,7 @@ if __name__ == "__main__":
 	#filesIn=["040722_amp1/testLBNL_inCave_chip3_EBt_1.0Vinj_0.5min.h5py"]	
 	#labels=["1.0V Injection in HI beam","Chip003, amp1"]
 	#fileOut="1.0Vinj_chip3_HIbeam_inCave"
-	plotTraces(filesIn,labels,fileOut,bins=False, addBaseline=True)
+	plotTraces(filesIn,labels,fileOut,bins=True, addBaseline=True)
 	#responseHistograms(filesIn,fileOut)
 	#tracesInSeries(filesIn,fileOut,20) #not useful - triggers too far apart
 	#tracesInSeries(filesIn,fileOut,2) 
