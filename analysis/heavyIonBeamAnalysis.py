@@ -3,6 +3,7 @@ import numpy as np
 import h5py
 import scipy
 from scipy.optimize import curve_fit
+from datetime import datetime
 
 ###############################
 #Global variables
@@ -10,7 +11,7 @@ from scipy.optimize import curve_fit
 
 chip=3 #choose 2 or 3
 homeDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/v2/"
-saveDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/heavyIonBeam/chip{chip}"
+saveDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/heavyIonBeam/chip{chip}/"
 
 ###############################
 #helper functions
@@ -98,15 +99,23 @@ def get_average_trace( filename, dataset, bins, addBaseline):
 ###############################
 def first_nonzero(lst):
 	for i, value in enumerate(lst):
-		if value > 0.02:
+		if value > 0.01:
 			return i
 	return -1
 
 ###############################
 def last_nonzero(lst):
 	for i, value in enumerate(reversed(lst)):
-		if value > 0.02:
+		if value > 0.01:
 			return len(lst)-i-1
+	return -1
+	
+###############################
+def next_zero(lst, startIndex):	
+	
+	for i,value in enumerate(lst[startIndex:]):
+		if value<0.01:
+			return startIndex+i
 	return -1
 
 ###############################
@@ -115,18 +124,22 @@ def get_height_duration(filename, dataset):
 	f = h5py.File(filename, 'r')
 	traces = np.array(f[dataset]) #baseline subtracted already
 	time = np.array(f[dataset+"_t"])
+	peakTime=np.array(f[dataset+"_peakTime"])
 	
 	toHist=[]
+	durationArr=[]
 	for trace in traces:
 		height=np.max(trace)
-		duration_start=first_nonzero(trace)
-		duration_end=last_nonzero(trace)
+		duration_start=np.argmax(trace)
+		duration_end=next_zero(trace,duration_start)
 		duration=time[duration_end]-time[duration_start]
 		if duration==0:
 			duration=1e-8
-		toHist.append(height/duration)
+		#toHist.append(height/duration)
+		durationArr.append(duration)
 
-	return toHist
+	#return toHist
+	return durationArr
 
 ###############################	
 def saveFromInput():
@@ -195,9 +208,8 @@ def plotBaseline(file, ds, fileOut):
 	f = h5py.File(file, 'r')
 	traces = f[ds] #baseline subtracted already
 	baseline = f[ds+"_baseline"][:len(traces)]
-	
+
 	plt.hist(baseline, bins=50)
-	plt.axvline(x=0.09, color='black')
 	plt.xlabel("Baseline [V] (average of points 0-2k)")
 	plt.ylabel("Counts")
 	plot=plt.gcf() #get current figure - saves fig in case savePlt==True
@@ -273,6 +285,158 @@ def plotTraces(files,labels,fileOut,ds=["run1"],bins=False, addBaseline=False):
 			if addBaseline:
 				plotBaseline(file,dataset,fileOut)	
 		
+#############################################################
+def responseHistograms(filesIn, fileOut, ds="run1"):
+	for f in filesIn:
+		file=homeDir+f
+		f = h5py.File(file, 'r')
+		baselines=f[ds+"_baseline"]
+		peaks=f[ds+"_peaks"]
+		integrals=f[ds+"_integral"]
+		peakTimes=np.array(f[ds+"_peakTime"])*1e6
+		trigTimes=np.array(f[ds+"_trigTime"])
+		deltaTrigs=[0]#placeholder for first element
+		for i in range(len(trigTimes)-1):
+			deltaTrigs.append(trigTimes[i+1]-trigTimes[i])
+		durations=get_height_duration(file, ds)
+		durations=[x*1e6 for x in durations]
+		
+		data=[peaks,integrals,peakTimes,durations,deltaTrigs]
+		strdata=["peaks","integral","peakTimes", "durations","deltaTrigs"]
+		xlabels=["Peak height [V]", "Integral [V]", "Peak Time (from trigger) [us]", "Pulse duration [us]","Time between triggers [s]"]
+		
+		for i,var in enumerate(data):
+			plt.hist(var,bins=60)
+			plt.xlabel(xlabels[i])
+			plt.ylabel("counts")
+			plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+			plt.show() #creates new figure for display
+			savePlt=saveFromInput()
+			if savePlt: #save plt stored with plt.gcf()
+				saveFile=saveDir+fileOut+"_"+strdata[i]+"_full.pdf"
+				print(f"Saving {saveFile}")
+				plot.savefig(saveFile)	
+			plt.clf()	
+		
+		#post processing to remove flat lines with baseline =-0.34 and have peak max within 50us after trigger (injections expect 10us)
+		peaks_pp=[]
+		integrals_pp=[]
+		peakTimes_pp=[]
+		durations_pp=[]
+		deltaTrigs_pp=[]
+		for i,bl in enumerate(baselines):
+			if bl>0 and peakTimes[i]>0 and peakTimes[i]<50:
+				peaks_pp.append(peaks[i])
+				integrals_pp.append(integrals[i])
+				peakTimes_pp.append(peakTimes[i])
+				if i<len(durations):
+					durations_pp.append(durations[i])
+				deltaTrigs_pp.append(deltaTrigs[i])
+				
+		print(f"Before PP - {len(peaks)} events")
+		print(f"After PP - {len(peaks_pp)} events (loose {(len(peaks)-len(peaks_pp))/len(peaks)*100}%)")
+
+		data_pp=[peaks_pp,integrals_pp,peakTimes_pp,durations_pp,deltaTrigs_pp]
+
+		for i,data in enumerate(data_pp):
+			plt.hist(data, bins=60)
+			plt.xlabel(xlabels[i])
+			plt.ylabel("counts")
+			plt.title("After Postprocessing - baseline>0 and 0<TrigTime<50us")
+			plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+			plt.show() #creates new figure for display
+			savePlt=saveFromInput()
+			if savePlt: #save plt stored with plt.gcf()
+				saveFile=saveDir+fileOut+"_"+strdata[i]+"_pp.pdf"
+				print(f"Saving {saveFile}")
+				plot.savefig(saveFile)	
+			plt.clf()	
+			
+		#SCATTERPLOTS
+		#peak time vs height
+		plt.scatter(peakTimes,peaks, s=3)
+		plt.xlabel("Peak time (from trigger) [us]")
+		plt.ylabel("Pulse height [V]")
+		plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+		plt.show() #creates new figure for display
+		savePlt=saveFromInput()
+		if savePlt: #save plt stored with plt.gcf()
+			saveFile=saveDir+fileOut+"_peakTimeVsHeight_full.pdf"
+			print(f"Saving {saveFile}")
+			plot.savefig(saveFile)	
+		plt.clf()
+		
+		#peak time vs duration
+		plt.scatter(peakTimes[:100],durations,s=3)#only have 100 durations because they come from saved traces
+		plt.xlabel("Peak time (from trigger) [us]")
+		plt.ylabel("Pulse duration [us]")
+		plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+		plt.show() #creates new figure for display
+		savePlt=saveFromInput()
+		if savePlt: #save plt stored with plt.gcf()
+			saveFile=saveDir+fileOut+"_peakTimeVsDuration_full.pdf"
+			print(f"Saving {saveFile}")
+			plot.savefig(saveFile)	
+		plt.clf()
+		
+		#peak height vs duration
+		plt.scatter(peaks[:100],durations,s=3)#only have 100 durations because they come from saved traces
+		plt.xlabel("Pulse height [V]")
+		plt.ylabel("Pulse duration [us]")
+		plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+		plt.show() #creates new figure for display
+		savePlt=saveFromInput()
+		if savePlt: #save plt stored with plt.gcf()
+			saveFile=saveDir+fileOut+"_peakHeightVsDuration_full.pdf"
+			print(f"Saving {saveFile}")
+			plot.savefig(saveFile)	
+		plt.clf()
+
+#############################################################
+def tracesInSeries(filesIn,fileOut,nmbTraces,ds="run1",firstTrace=0):
+
+#plot traces as fn of time in series - see if can reconstruct peaks
+#do not baseline correct - add back in
+	for f in filesIn:
+		file=homeDir+f
+		f = h5py.File(file, 'r')
+		traces=f[ds]
+		baselines=f[ds+"_baseline"]
+		traces=[x+y for x,y in zip(traces,baselines)]#add baselines back into traces
+		peaks=f[ds+"_peaks"]
+		integrals=f[ds+"_integral"]
+		trigTimes=f[ds+"_trigTime"] #timestamps - in computer time, units=seconds
+		timeAxis=f[ds+"_t"] #units=seconds
+
+		#use all traces if nmbTraces==-1
+		if nmbTraces<0:
+			nmbTraces=len(traces)-1
+		
+		deltaTrigs=[0]#placeholder 0 for first element
+		for i in range(len(trigTimes)-1):
+			deltaTrigs.append(trigTimes[i+1]-trigTimes[i])
+		
+
+		for i in range(nmbTraces):
+			plt.plot([x+sum(deltaTrigs[:i+1]) for x in timeAxis],traces[i])
+			#advance plot by all time between all triggers that came before the trigger in question
+		#plt.xscale('log')
+		plt.xlabel('time [s]')
+		plt.ylabel('recorded signal [V]')
+		plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+		plt.show() #creates new figure for display
+		savePlt=saveFromInput()
+		if savePlt: #save plt stored with plt.gcf()
+			saveFile=saveDir+fileOut+"_"+str(nmbTraces)+"tracesInSeries.pdf"
+			print(f"Saving {saveFile}")
+			plot.savefig(saveFile)	
+		plt.clf()
+		
+		
+		trigTimes=[datetime.fromtimestamp(x) for x in trigTimes]
+		print(trigTimes[0])
+		print(trigTimes[1])
+	
 ###############################
 #Main
 ###############################
@@ -282,19 +446,27 @@ if __name__ == "__main__":
 	##Plot multiple average traces on one plot
 	##Required arguments: input files, legend labels [first entry = plot title], output file name
 	##Optional argument: array of datasets to compare (must be in same file: ex. run1 and and run2 from same input file). Default = only "run1"
-	
-	filesIn=["040722_amp1/LBNL_inCave_withBeam_ion1_chip3_EBt_1.8Vinj_2min.h5py"]
+
+	#filesIn=["040722_amp1/LBNL_inCave_withBeam_ion1_chip3_EBt_1.8Vinj_2min.h5py","040722_amp1/LBNL_inCave_withBeam_ion2_chip3_EBt_1.8Vinj_2min.h5py","040722_amp1/LBNL_inCave_withBeam_ion3_chip3_EBt_1.8Vinj_2min.h5py","040722_amp1/LBNL_inCave_withBeam_ion4_chip3_EBt_1.8Vinj_2min.h5py","040722_amp1/LBNL_inCave_withBeam_ion5_chip3_EBt_1.8Vinj_4min.h5py"]	
+	#labels=["1.8V Injection in HI beam, Chip003, amp1", "ion1", "ion2", "ion3", "ion4", "ion5"]
+	#fileOut="1.8Vinj_chip3_HIbeam_all"
+	filesIn=["040722_amp1/LBNL_inCave_withBeam_ion2_chip3_EBt_1.8Vinj_2min.h5py"]	
 	labels=["1.8V Injection in HI beam","Chip003, amp1"]
-	plotTraces(filesIn,labels,"v2_1.8Vinj_chip3_HIbeam_ion1",bins=True, addBaseline=True)
+	fileOut="1.8Vinj_chip3_HIbeam_ion2"
+	#filesIn=["040722_amp1/testLBNL_inCave_chip3_EBt_1.0Vinj_0.5min.h5py"]	
+	#labels=["1.0V Injection in HI beam","Chip003, amp1"]
+	#fileOut="1.0Vinj_chip3_HIbeam_inCave"
+	plotTraces(filesIn,labels,fileOut,bins=False, addBaseline=True)
+	#responseHistograms(filesIn,fileOut)
+	#tracesInSeries(filesIn,fileOut,20) #not useful - triggers too far apart
+	#tracesInSeries(filesIn,fileOut,2) 
 	
 
 #do any traces look like expected? (one single peak)		
 #histogram of height duration on triggered pulse - full collection and also binned
 #compare pulse duration to good injected run
 
-#baseline values?
-#redo average plot without subtracting baseline (adding it back in?)- do any traces even have reliable baseline baseline estimates?
-#distribution of peak times. peak time vs height, peak time vs duration
+#distribution of peak time vs height, peak time vs duration
 		
 		
 		
