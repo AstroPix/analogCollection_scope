@@ -451,30 +451,31 @@ def tracesInSeries(filesIn,fileOut,nmbTraces,ds="run1",firstTrace=0):
 
 if __name__ == "__main__":
 
-	##Plot multiple average traces on one plot
-	##Required arguments: input files, legend labels [first entry = plot title], output file name
-	##Optional argument: array of datasets to compare (must be in same file: ex. run1 and and run2 from same input file). Default = only "run1"
-
-	#filesIn=["040722_amp1/LBNL_inCave_withBeam_ion1_chip3_EBt_1.8Vinj_2min.h5py","040722_amp1/LBNL_inCave_withBeam_ion2_chip3_EBt_1.8Vinj_2min.h5py","040722_amp1/LBNL_inCave_withBeam_ion3_chip3_EBt_1.8Vinj_2min.h5py","040722_amp1/LBNL_inCave_withBeam_ion4_chip3_EBt_1.8Vinj_2min.h5py","040722_amp1/LBNL_inCave_withBeam_ion5_chip3_EBt_1.8Vinj_4min.h5py"]	
-	#labels=["1.8V Injection in HI beam, Chip003, amp1", "ion1", "ion2", "ion3", "ion4", "ion5"]
-	#fileOut="1.8Vinj_chip3_HIbeam_all"
-	filesIn=["040722_amp1/LBNL_inCave_withBeam_ion2_chip3_EBt_1.8Vinj_2min.h5py"]	
+	filesIn=["040722_amp1/LBNL_inCave_withBeam_ion5_chip3_EBt_1.8Vinj_4min.h5py"]	
 	labels=["1.8V Injection in HI beam","Chip003, amp1"]
-	fileOut="1.8Vinj_chip3_HIbeam_ion2"
+	fileOut="1.8Vinj_chip3_HIbeam_ion5"
 	#filesIn=["040722_amp1/testLBNL_inCave_chip3_EBt_1.0Vinj_0.5min.h5py"]	
 	#labels=["1.0V Injection in HI beam","Chip003, amp1"]
 	#fileOut="1.0Vinj_chip3_HIbeam_inCave"
-	plotTraces(filesIn,labels,fileOut,bins=True, addBaseline=True)
-	#responseHistograms(filesIn,fileOut)
-	#tracesInSeries(filesIn,fileOut,20) #not useful - triggers too far apart
-	#tracesInSeries(filesIn,fileOut,2) 
 	
-
-#do any traces look like expected? (one single peak)		
-#histogram of height duration on triggered pulse - full collection and also binned
-#compare pulse duration to good injected run
-
-#distribution of peak time vs height, peak time vs duration
+	##Plot multiple average traces on one plot
+	##Required arguments: input files, legend labels [first entry = plot title], output file name
+	##Optional argument: array of datasets to compare (must be in same file: ex. run1 and and run2 from same input file). Default = only "run1"
+	plotTraces(filesIn,labels,fileOut,bins=True, addBaseline=True)
+	
+	
+	##Plot histograms of quantities of interest, include postprocessing cuts to search for injected signal and replot
+	##Plot scatter plots showing relation of variables
+	##Required arguments: input files, output file name
+	##Option argument: dataset name [ds] - Default = only "run1"
+	responseHistograms(filesIn,fileOut)
+	
+	##Plot traces as they look in real time, separated by the time between triggers
+	##Required arguments: input files, output file name, number of triggers to plot
+	##Option arguments: dataset name [ds] - Default = only "run1", number of trace to begin plotting from [firstTrace] - default ==0 (beginning of file)
+	tracesInSeries(filesIn,fileOut,20) 
+	tracesInSeries(filesIn,fileOut,2) 
+	
 		
 		
 		
