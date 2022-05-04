@@ -62,7 +62,11 @@ Injection scans (old DACs settings)
 > 030122_amp1  
 > 030322_amp1/ (without chip2*)  
 
-amp1 calibration:
+Injection scans (new DACs settings and setup config)  
+> 050322_amp1/scan_*  
+
+amp1 calibration (new DACs settings and setup config):
+> 050422_amp1/35mV_cobalt57_60min.h5py
 
 #### Chip 2201002 (chip2)
 
