@@ -8,7 +8,7 @@ from scipy.optimize import curve_fit
 #Global variables
 ###############################
 
-vers=1
+vers=2
 homeDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/v{vers}/"
 saveDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/noise_gain_thresholdScan/v{vers}/"
 
@@ -235,7 +235,7 @@ if __name__ == "__main__":
 	for i in inj:
 		fileName_versions=[f"102221_amp1/1.{i}Vinj.h5py",f"030122_amp1/scan_1.{i}Vinj_2min.h5py",f"032122_amp1/chip1_1.{i}Vinj_2min.h5py"]	
 		vers=[f"1.{i}V injection, Amp1","v1","v2 orig", "v2 new DACs"]
-		plotTraces_compare(fileName_versions, vers, f"amp1_1.{i}Vinj_compareVersions", xrange=0.02, versionBool=True, versionArray=[1,2,2])
+		#plotTraces_compare(fileName_versions, vers, f"amp1_1.{i}Vinj_compareVersions", xrange=0.02, versionBool=True, versionArray=[1,2,2])
 
 	##Compare traces as bench setup is updated
 	filesIn=["032122_amp1/chip1_1.0Vinj_2min.h5py","032522_amp1/newPS_chip2_1.0Vinj_2min.h5py","032522_amp1/newCable_newPS_chip2_1.0Vinj_2min.h5py","032822_amp1/newCable2_newPS_chip2_1.0Vinj_2min.h5py"]
@@ -247,7 +247,10 @@ if __name__ == "__main__":
 	labels=["1.0V Injection, Amp 1 Chip 2","Baseline", "0.5in", "1.7in", "3.2in"]
 	#plotTraces_compare(filesIn,labels,"amp1_chip2_1.0Vinj_ribbonCables", xrange=0.015, ratioBool=False)	
 		
-		
+	##Compare traces after new PS added for POW6 and PCB jumper moved	
+	filesIn=["032122_amp1/chip1_0.3Vinj_2min.h5py","050322_amp1/scan_0.3Vinj_2min.h5py"]
+	labels=["0.3V Injection, Amp 1 Chip 1","Nominal", "new setup"]
+	plotTraces_compare(filesIn,labels,"amp1_0.3Vinj_redoSetup", xrange=0.01, ratioBool=True)
 		
 		
 		

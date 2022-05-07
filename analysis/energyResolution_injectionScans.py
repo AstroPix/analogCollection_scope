@@ -9,11 +9,11 @@ import enResFitting
 
 #######################
 #Global variables
-savePlots=False
+savePlots=True
 #Fit peak heights or integral value (scaled by scope resolution)
 #If traceInteg is true, use integral. If false, use peak height
-traceInteg = True
-vers=12 #1 if v1, 2 if v2, 12 if comparing v1 and v2
+traceInteg = False
+vers=2 #1 if v1, 2 if v2, 12 if comparing v1 and v2
 
 
 #######################
@@ -34,7 +34,8 @@ def injScanPlot(inj, data, err, dataName, saveto, chip, fit=False):
 	elif vers==2:
 		plt.title("v2")
 		#labels=['Chip1','Chip2']
-		labels=['Orig DACs', 'Updated DACs']
+		#labels=['Orig DACs', 'Updated DACs']
+		labels=['Nominal', 'Updated Setup']
 		chip=""
 	elif vers==12:
 		plt.title("v1 vs v2")
@@ -75,8 +76,10 @@ if vers==1:
 elif vers==2:
 	#saveDir = ["/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip1/origDACs/","/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip2/origDACs/"]
 	#runList=[['030122',1],['030322',1]] #orig DACs settings
-	saveDir = ["/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip1/origDACs/","/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip1/"]
-	runList=[['030122',1],['032122',1]] #orig vs updated DACs settings, chip1
+	#saveDir = ["/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip1/origDACs/","/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip1/updatedDACs/"]
+	#runList=[['030122',1],['032122',1]] #orig vs updated DACs settings, chip1
+	saveDir = ["/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip1/","/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip1/updatedDACs/"]
+	runList=[['050322',1],['032122',1]] #updated bench config with new LVPS, chip1
 elif vers==12:
 	saveDir = ["/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v1/chip003/","/Users/asteinhe/AstroPixData/astropixOut_tmp/injectionScans/v2/chip1/"]
 	runList=[['102221',1],['032122',1]] #orig vs updated DACs settings, chip1
@@ -106,7 +109,8 @@ for i,element in enumerate(runList):
 		elif i==0: #v2 chip1
 			file=f"{homeDir}/v2/{element[0]}_amp{element[1]}/scan_{inj:.1f}Vinj_2min.h5py"
 		else: #v2 chip2
-			file=f"{homeDir}/v2/{element[0]}_amp{element[1]}/scan_chip2_{inj:.1f}Vinj_2min.h5py"
+			#file=f"{homeDir}/v2/{element[0]}_amp{element[1]}/scan_chip2_{inj:.1f}Vinj_2min.h5py"
+			file=f"{homeDir}/v2/{element[0]}_amp{element[1]}/chip1_{inj:.1f}Vinj_2min.h5py"
 		settings=[file, f"{inj:.1f}V-injection", element[1], inj, savePlots, chip]
 		popt, enRes, pcov = enResFitting.enResPlot(settings, savedir=saveDir[i], integral=traceInteg, injection=True, binSize=binsize)
 		enResFitting.printParams(settings, popt, enRes, pcov, savedir=saveDir[i], integral=traceInteg, injection=True)
