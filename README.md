@@ -62,11 +62,20 @@ Injection scans (old DACs settings)
 > 030122_amp1  
 > 030322_amp1/ (without chip2*)  
 
-Injection scans (new DACs settings and setup config)  
+Injection scan (new DACs settings)
+> 032122_amp1/chip1_*
+
+Injection scans (new setup config)  
 > 050322_amp1/scan_*  
 
 amp1 calibration (new DACs settings and setup config):
 > 050422_amp1/35mV_cobalt57_60min.h5py
+> 051122_amp1/100mV_cobalt57_360min_combined.h5py
+> 051022_amp1/low_35mV_cadmium109_45min.h5py
+> 051022_amp1/cadmium109_200mV_1920min_combined.h5py
+> 050522_amp1/test_100mV_barium133_330min.h5py
+>> Cd combined files: 050422_amp1/200mV_cadmium109_960min.h5py, 051022_amp1/high_200mV_cadmium109_960min.h5py
+>> Co combined files: 050422_amp1/100mV_cobalt57_180min.h5py, 051122_amp1/100mV_cobalt57_180min.h5py
 
 #### Chip 2201002 (chip2)
 

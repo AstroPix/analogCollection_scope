@@ -13,9 +13,12 @@ import enResFitting
 
 savePlots=False #If false, get option to save each plot upon viewing. If true, plots are not displayed and all automatically saved
 traceInteg=False
-v1=True
-chip=4 #Can be: 3, 4 [for v1], 1, 2 [for v2]
 label = "integ" if traceInteg else "peaks"
+vers=12 #1 if v1, 2 if v2, 12 if comparing v1 and v2
+chip=3 #Can be: 3, 4 [for v1], 1, 2 [for v2]. If comparing, also set chip2 (for v2)
+if vers>10:
+	chip2=1
+	label+="_compareVers"
 
 #Choose what to plot
 allPlots=True #overrides all other options
@@ -27,7 +30,7 @@ calibratedMuEnRes=False #compare calib functions - mean and enRes
 #AMANDA - make more robust in pulling fit info AND improve chi2 calculation
 calibratedMuChi2=False #compare calib functions - ratio of calibrated/expected mean and fit chi2/ndof
 calibratedSigma=False #compare calib functions - Gaussian sigma
-calibratedMuEnResScan=False #For one calib function, plot calibrated vs expected energy for all sources with color bar indicating energy resolution. Optional ratio plot
+calibratedMuEnResScan=True #For one calib function, plot calibrated vs expected energy for all sources with color bar indicating energy resolution. Optional ratio plot
 
 #IF making v1 plots, remember to check data and calibration pixel arrays at end of Main
 
@@ -99,11 +102,12 @@ def saveFromInput(saveFile):
 ###############################
 
 def rawEnRes(dataDir,energyList, enResArr,energyList2=[],enResArr2=[]):
-	plt.plot(energyList, enResArr, 'o', label="Amp1")
+	legLabel="Amp" if vers<10 else "v"
+	plt.plot(energyList, enResArr, 'o', label=f"{legLabel}1")
 	plt.xlabel("True Energy [keV]")
 	plt.ylabel(f"Energy Resolution [%]")
 	if len(enResArr2)>0:
-		plt.plot(energyList2, enResArr2, 'or', label="Amp2")	
+		plt.plot(energyList2, enResArr2, 'or', label=f"{legLabel}2")	
 		plt.legend(loc="best")
 	plt.grid()
 	saveto=f"{dataDir}{label}_comparePixels_enRes.pdf"
@@ -121,7 +125,8 @@ def rawMuSig(dataDir,sigmaArr,sigErr,muArr,muErr,sigmaArr2=[],sigErr2=[],muArr2=
 			continue
 		#sig=flattenIn(arr)
 		x = np.linspace(np.min(muArr[i]), np.max(muArr[i]), 1000)
-		plt.errorbar(muArr[i],sigmaArr[i], xerr=muErr[i], yerr=sigErr[i], fmt='o', label=f"Amp{i+1}")
+		legLabel=f"Amp{i+1}" if vers<10 else f"v{i+1}"
+		plt.errorbar(muArr[i],sigmaArr[i], xerr=muErr[i], yerr=sigErr[i], fmt='o', label=legLabel)
 		popt, pcov = curve_fit(sqrtFit, muArr[i], sigmaArr[i], absolute_sigma=True) #square root
 		sqrt_fn = sqrtFit(x, *popt)
 		chi2=calcChi2(sigmaArr[i],muArr[i],sigErr[i],popt)
@@ -147,7 +152,8 @@ def calibCurve(dataDir,energyList,muArr,muErr,energyList2=[],muArr2=[],muErr2=[]
 	for i,arr in enumerate(muArr):
 		if len(arr)==0:
 			continue
-		plt.errorbar(energyList[i], muArr[i], yerr=muErr[i], fmt='o', color=colors[i], label=f"Amp{i+1}")
+		legLabel=f"Amp{i+1}" if vers<10 else f"v{i+1}"
+		plt.errorbar(energyList[i], muArr[i], yerr=muErr[i], fmt='o', color=colors[i], label=legLabel)
 		plt.xlim([-10,1.1*np.max(energyList[i])])
 		
 	plt.xlabel("True Energy [keV]")
@@ -268,34 +274,39 @@ def muEnResScan(dir, fit, pix, calibPixel, ratioBool=False):
 
 ####################
 #raw data
-if v1:
+if vers==1:
 	dataDir=f"/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v1_chip00{chip}/amp1_peaks/"
 	dataDir2=f"/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v1_chip00{chip}/amp2_peaks/"	
 	energyList2, muArr2, sigmaArr2, enResArr2, muErr2, sigErr2, enresErr2 = enResFitting.getVals_fromTxt(dataDir2+"fitSpectra/", integral=traceInteg)	
 
-else:
+elif vers==2:
 	dataDir=f"/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v2_chip{chip}/amp1_peaks/"
 	#only one pixel for v2
 	
+else: #compare v1/v2
+	dataDir=f"/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v1_chip00{chip}/amp1_peaks/"
+	dataDir2=f"/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v2_chip{chip2}/amp1_peaks/"	
+	energyList2, muArr2, sigmaArr2, enResArr2, muErr2, sigErr2, enresErr2 = enResFitting.getVals_fromTxt(dataDir2+"fitSpectra/", integral=traceInteg)	
+
 energyList, muArr, sigmaArr, enResArr, muErr, sigErr, enresErr = enResFitting.getVals_fromTxt(dataDir+"fitSpectra/", integral=traceInteg)
 
 	
 #short circuit function calls with boolean operators
 #if first condition (boolean) is False, then second condition (function evaluation) not evaluated because overall condition is False
-if v1:
-	(allPlots or rawEnergyResolution) and rawEnRes(dataDir,energyList,enResArr,energyList2=energyList2, enResArr2=enResArr2) 
-	(allPlots or rawMuSigma) and rawMuSig(dataDir,sigmaArr,sigErr,muArr,muErr,sigmaArr2=sigmaArr2,sigErr2=sigErr2,muArr2=muArr2,muErr2=muErr2)
-	(allPlots or calibrationCurve) and calibCurve(dataDir,energyList,muArr,muErr,energyList2=energyList2,muArr2=muArr2,muErr2=muErr2)
-else:
+if vers==2:
 	(allPlots or rawEnergyResolution) and rawEnRes(dataDir,energyList,enResArr) 
 	(allPlots or rawMuSigma) and rawMuSig(dataDir,sigmaArr,sigErr,muArr,muErr)
 	(allPlots or calibrationCurve) and calibCurve(dataDir,energyList,muArr,muErr)
-
+else:
+	#Two lines to compare
+	(allPlots or rawEnergyResolution) and rawEnRes(dataDir,energyList,enResArr,energyList2=energyList2, enResArr2=enResArr2) 
+	(allPlots or rawMuSigma) and rawMuSig(dataDir,sigmaArr,sigErr,muArr,muErr,sigmaArr2=sigmaArr2,sigErr2=sigErr2,muArr2=muArr2,muErr2=muErr2)
+	(allPlots or calibrationCurve) and calibCurve(dataDir,energyList,muArr,muErr,energyList2=energyList2,muArr2=muArr2,muErr2=muErr2)
 
 
 ####################
 #calibrated data
-if v1:
+if vers==1:
 	dataPixel=[1,2]
 	calibPixel=[1,2]
 	#calibPixel=[2,1]
@@ -303,20 +314,26 @@ if v1:
 		f"/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v1_chip00{chip}/amp{dataPixel[1]}_peaks/amp{calibPixel[1]}Calib/"]
 	sources=["Cad","Am","Cobalt57-calib_122.06"] if chip==3 else ["Cad","Cobalt57-calib_122.06"]
 	calibFits=["tri","spline3"]
-else:
+elif vers==2:
 	#only one pixel for v2
 	dataPixel=[1]
 	calibPixel=[1]
 	dataDirCalib=[f"/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v2_chip{chip}/amp{dataPixel[0]}_peaks/amp{calibPixel[0]}Calib/"]
 	sources=["Cad","Cobalt57-calib_122.06"]
-	calibFits=["tri"]
-
+	calibFits=["tri","spline3"]
+else: #Comparing always amp1
+	dataPixel=[1,1]
+	calibPixel=[1,1]
+	dataDirCalib=[f"/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v1_chip00{chip}/amp{dataPixel[0]}_peaks/amp{calibPixel[0]}Calib/",
+		f"/Users/asteinhe/AstroPixData/astropixOut_tmp/energyCalibration/v2_chip{chip2}/amp{dataPixel[1]}_peaks/amp{calibPixel[1]}Calib/"]
+	sources=["Cad","Cobalt57-calib_122.06"]
+	calibFits=["tri","spline3"]
 
 for source in sources:
 	for i,p in enumerate(dataPixel):
-		(allPlots or calibratedMuEnRes) and muEnResPlot(dataDirCalib[p-1],source,p,calibPixel[i])
-		(allPlots or calibratedMuChi2) and chi2RatioPlot(dataDirCalib[p-1],source,p,calibPixel[i])
-		(allPlots or calibratedSigma) and sigmaPlot(dataDirCalib[p-1],source,p,calibPixel[i])
+		(allPlots or calibratedMuEnRes) and muEnResPlot(dataDirCalib[i],source,p,calibPixel[i])
+		(allPlots or calibratedMuChi2) and chi2RatioPlot(dataDirCalib[i],source,p,calibPixel[i])
+		(allPlots or calibratedSigma) and sigmaPlot(dataDirCalib[i],source,p,calibPixel[i])
 		
 for calib in calibFits:
 	for i,p in enumerate(dataPixel):
