@@ -106,7 +106,19 @@ def getFiles(amp):
 	elif amp==1 and vers==2:
 		with open(input1, 'r') as files1:
 			fileList=files1.readlines()
-		if chip==2:
+		if chip==1:
+			energyList=[22.16, 88.03,122.06,14.41,30.1]
+			nameList=["Cadmium109", "Cadmium109", "Cobalt57", "Cobalt57","Barium133"]
+			#fine-tune the range so that individual peaks are picked out
+			if not traceInteg:
+				fitLowArr=[0.0,0.36,0.3,0.06,0.15]
+				fitHighArr=[0.25,0.39,0.42,0.1,0.25]
+				binsize=[0.01,0.002,0.01,0.007,0.005] #if 005, 002. if 01, 005 (not low cd)
+			else:
+				fitLowArr=[0,70,80,0,0]
+				fitHighArr=[30,80,120,120,100]
+				binsize=np.zeros(len(energyList))
+		if chip==2 :
 			energyList=[22.16, 88.03,122.06,14.41,30.1]
 			nameList=["Cadmium109", "Cadmium109", "Cobalt57", "Cobalt57","Barium133"]
 			#fine-tune the range so that individual peaks are picked out
@@ -374,6 +386,24 @@ fitFn = energyCalibFit(energyList, muArr, muErrArr, "Fit Mean [V]", saveDir, tra
 
 #use calibration curve to calibrate a spectrum
 if pix==1:
+	if chip==1:
+	#chip001 v2#not fitting edge
+		files=["050422_amp1/35mV_cadmium109_5min.h5py","050422_amp1/200mV_cadmium109_960min.h5py","050422_amp1/100mV_cobalt57_180min.h5py","050422_amp1/35mV_cobalt57_60min.h5py","050522_amp1/test_100mV_barium133_330min.h5py"]
+		name=["Cadmium109-calib","Cadmium109-calib","Cobalt57-calib","Cobalt57-calib","Barium133-calib"]
+		trueEn=[22.16,88.03,122.06,14.41,30.1]
+		binSizeArr=[0.5,1.2,2.5,0.5,1.5]#default 0
+		if traceInteg:
+			fitLowArr=[0,0,100,0,0]
+			fitHighArr=[np.inf,np.inf,np.inf,np.inf,np.inf]
+		else:
+			fitLowArr=[0,84,100,0,0] #default 0
+			fitHighArr=[40,np.inf,130,np.inf,np.inf] #default np.inf
+			
+		for i,f in enumerate(files):
+			settings=[homeDir+f,name[i],pix,trueEn[i],savePlots,chip]
+			popt, enRes, pcov = enResFitting.enResPlot(settings,fit=fit,coef=fitFn,fitLow=fitLowArr[i], fitHigh=fitHighArr[i], binSize=binSizeArr[i], integral=traceInteg)
+			enResFitting.printParams(settings, popt, enRes, pcov, integral=traceInteg)
+
 	if chip==2:
 	#chip002 v2#not fitting edge
 		files=["030322_amp1/TEST_chip2_cadmium109_10min.h5py","030822_amp1/chip2_200mV_cadmium109_330min_combined.h5py","030422_amp1/chip2_150mV_cobalt57_150min.h5py","030422_amp1/chip2_75mV_cobalt57_120min.h5py","030722_amp1/chip2_100mV_barium133_960min.h5py"]
