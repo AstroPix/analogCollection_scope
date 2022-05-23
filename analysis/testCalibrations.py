@@ -11,11 +11,11 @@ import enResFitting
 # Global variables
 ###############################
 
-savePlots=False #If false, get option to save each plot upon viewing. If true, plots are not displayed and all automatically saved
+savePlots=True #If false, get option to save each plot upon viewing. If true, plots are not displayed and all automatically saved
 traceInteg=False
 label = "integ" if traceInteg else "peaks"
-vers=12 #1 if v1, 2 if v2, 12 if comparing v1 and v2
-chip=3 #Can be: 3, 4 [for v1], 1, 2 [for v2]. If comparing, also set chip2 (for v2)
+vers=2 #1 if v1, 2 if v2, 12 if comparing v1 and v2
+chip=1 #Can be: 3, 4 [for v1], 1, 2 [for v2]. If comparing, also set chip2 (for v2)
 if vers>10:
 	chip2=1
 	label+="_compareVers"
@@ -112,6 +112,7 @@ def rawEnRes(dataDir,energyList, enResArr,energyList2=[],enResArr2=[]):
 	plt.grid()
 	saveto=f"{dataDir}{label}_comparePixels_enRes.pdf"
 	plt.savefig(saveto) if savePlots else saveFromInput(saveto)
+	plt.clf()
 	
 def rawMuSig(dataDir,sigmaArr,sigErr,muArr,muErr,sigmaArr2=[],sigErr2=[],muArr2=[],muErr2=[]):
 	sigmaArr=[sigmaArr,sigmaArr2]
@@ -141,7 +142,7 @@ def rawMuSig(dataDir,sigmaArr,sigErr,muArr,muErr,sigmaArr2=[],sigErr2=[],muArr2=
 	plt.legend(loc="best")
 	saveto=f"{dataDir}{label}_comparePixels_muVsSig.pdf"
 	plt.savefig(saveto) if savePlots else saveFromInput(saveto)
-
+	plt.clf()
 	
 def calibCurve(dataDir,energyList,muArr,muErr,energyList2=[],muArr2=[],muErr2=[]):
 	energyList=[energyList,energyList2]
@@ -165,6 +166,7 @@ def calibCurve(dataDir,energyList,muArr,muErr,energyList2=[],muArr2=[],muErr2=[]
 	plt.grid()
 	saveto=f"{dataDir}{label}_comparePixels.pdf"
 	plt.savefig(saveto) if savePlots else saveFromInput(saveto)
+	plt.clf()
 	
 def muEnResPlot(dir, ele, pix, calibPix):
 	en, mu, sig, enRes, fits, muErr, sigErr, enresErr = enResFitting.getCalibVals_fromTxt(dir, ele, integral=traceInteg)
@@ -183,7 +185,7 @@ def muEnResPlot(dir, ele, pix, calibPix):
 	plt.title(f"{ele} {en} keV line - amp{pix}")
 	saveto=dir+ele+"_amp"+str(pix)+"_muEnRes_"+label+"_calib"+str(calibPix)+".pdf"
 	plt.savefig(saveto) if savePlots else saveFromInput(saveto)
-
+	plt.clf()
 
 def chi2RatioPlot(dir, ele, pix, calibPixel):
 	chi2, ndof = getChi2(dir)
@@ -210,6 +212,7 @@ def chi2RatioPlot(dir, ele, pix, calibPixel):
 	plt.title(f"{ele} {en} keV line - amp{pix}")
 	saveto=dir+ele+"_amp"+str(pix)+"_chi2Ratio_"+label+"_calib"+str(calibPixel)+".pdf"
 	plt.savefig(saveto) if savePlots else saveFromInput(saveto)
+	plt.clf()
 	
 def sigmaPlot(dir, ele, pix, calibPixel):
 	en, mu, sig, enRes, fits, muErr, sigErr, enresErr = enResFitting.getCalibVals_fromTxt(dir, ele, integral=traceInteg)
@@ -226,6 +229,7 @@ def sigmaPlot(dir, ele, pix, calibPixel):
 	plt.title(f"{ele} {en} keV line - amp{pix}")
 	saveto=dir+ele+"_amp"+str(pix)+"_sigma_"+label+"_calib"+str(calibPixel)+".pdf"
 	plt.savefig(saveto) if savePlots else saveFromInput(saveto)
+	plt.clf()
 
 def muEnResScan(dir, fit, pix, calibPixel, ratioBool=False):
 	plt.rcParams.update({'font.size': 18})
@@ -337,4 +341,4 @@ for source in sources:
 		
 for calib in calibFits:
 	for i,p in enumerate(dataPixel):
-			(allPlots or calibratedMuEnResScan) and muEnResScan(dataDirCalib[p-1],calib,p,calibPixel[i],ratioBool=True)
+			(allPlots or calibratedMuEnResScan) and muEnResScan(dataDirCalib[i],calib,p,calibPixel[i],ratioBool=True)
