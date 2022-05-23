@@ -74,6 +74,7 @@ amp1 calibration (new DACs settings and setup config):
 > 051022_amp1/low_35mV_cadmium109_45min.h5py
 > 051022_amp1/cadmium109_200mV_1920min_combined.h5py
 > 050522_amp1/test_100mV_barium133_330min.h5py
+> 051822_amp1/125mV_digitalPaired_americium241_1020min.h5py
 >> Cd combined files: 050422_amp1/200mV_cadmium109_960min.h5py, 051022_amp1/high_200mV_cadmium109_960min.h5py
 >> Co combined files: 050422_amp1/100mV_cobalt57_180min.h5py, 051122_amp1/100mV_cobalt57_180min.h5py
 
