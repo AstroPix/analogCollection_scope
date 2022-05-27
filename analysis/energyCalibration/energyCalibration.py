@@ -115,9 +115,10 @@ def getFiles(amp):
 				fitHighArr=[0.25,0.39,0.42,0.1,0.25,0.4]
 				binsize=[0.01,0.002,0.01,0.007,0.005,0.004] 
 			else:
-				fitLowArr=[0,70,80,0,0]
-				fitHighArr=[30,80,120,120,100]
-				binsize=np.zeros(len(energyList))
+				fitLowArr=[2,12,12,0,0,9]
+				fitHighArr=[np.inf,np.inf,np.inf,2,np.inf,np.inf]
+				#binsize=np.zeros(len(energyList))
+				binsize=np.ones(len(energyList))*0.25
 		if chip==2 :
 			energyList=[22.16, 88.03,122.06,14.41,30.1]
 			nameList=["Cadmium109", "Cadmium109", "Cobalt57", "Cobalt57","Barium133"]
@@ -396,8 +397,8 @@ if pix==1:
 			fitLowArr=[0,0,100,0,0,0]
 			fitHighArr=[np.inf,np.inf,np.inf,np.inf,np.inf,np.inf]
 		else:
-			fitLowArr=[0,84,100,0,0,55] #default 0
-			fitHighArr=[40,np.inf,130,np.inf,np.inf,np.inf] #default np.inf
+			fitLowArr=[0,70,100,0,0,55] #default 0
+			fitHighArr=[40,np.inf,140,np.inf,np.inf,np.inf] #default np.inf
 			
 		for i,f in enumerate(files):
 			settings=[homeDir+f,name[i],pix,trueEn[i],savePlots,chip]
