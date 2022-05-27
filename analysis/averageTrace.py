@@ -36,6 +36,27 @@ def get_average_trace( filename, dataset ):
 	mean=mean[0::50]
 	
 	return mean
+	
+def get_average_trace_divided( filename, dataset, div, norm ):
+
+	f = h5py.File(filename, 'r')
+	traces = np.array(f[dataset]) #baseline subtracted already
+	peaks = np.array(f[dataset+"_peaks"][:len(traces)])
+	
+	mean=[0,0]
+	mean[0]=np.mean(traces[peaks<div], axis = 0)
+	mean[1]=np.mean(traces[peaks>=div], axis = 0)
+	
+	var=[np.var(mean[0]), np.var(mean[1])]
+
+	if norm: #normalize full trace to unity to compare shapes directly
+		mean[0]=mean[0]/np.sum(mean[0])
+		mean[1]=mean[1]/np.sum(mean[1])
+		
+	#reduce number of points for smoother curve
+	mean=[x[0::50] for x in mean]
+	
+	return mean, var
 
 def get_baseline_plt(filename, dataset, xrange=0.004):
 
@@ -58,9 +79,9 @@ def first_nonzero(lst):
 			return i
 	return -1
 
-def last_nonzero(lst):
+def last_nonzero(lst,threshold=0.02):
 	for i, value in enumerate(reversed(lst)):
-		if value > 0.02:
+		if value > threshold:
 			return len(lst)-i-1
 	return -1
 
@@ -188,7 +209,33 @@ def plotTraces_compare(fileName,labels, fileOut, ds=["run1"], xrange=0.004, rati
 		plot.savefig(saveFile)	
 	plt.clf()
 
-		
+#Compare traces from two different parts of one distribution by plotting together - must define voltage that separates two distribution portions
+def plotTraces_compareFeatures(files,fileOut,div,ds=["run1"],normaliz=False):
+	i=0
+	labels=[f"Peak height <{div}",f"Peak height >={div}"]
+	extraTitle="Normalized" if normaliz else ""
+	for f in files:
+		file=homeDir+f
+		j=0
+		while j<len(ds):
+			time=get_time(file,ds[j])
+			trace,var=get_average_trace_divided(file, ds[j], div, normaliz)
+			i+=1
+			plt.plot(time*1e6, trace[0], label=labels[0]+f", var={var[0]:.6f}")
+			plt.plot(time*1e6, trace[1], label=labels[1]+f", var={var[1]:.6f}")
+			j+=1
+	plt.legend(loc="best")
+	plt.xlabel( "time ($\mu$s)" )
+	plt.ylabel("trace - baseline [V]")
+	plt.title("Peak Height "+extraTitle)
+	plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+	plt.show() #creates new figure for display
+	savePlt=saveFromInput()
+	if savePlt: #save plt stored with plt.gcf()
+		saveFile=saveDir+fileOut+extraTitle+".pdf"
+		print(f"Saving {saveFile}")
+		plot.savefig(saveFile)	
+	plt.clf()
 		
 ###############################
 #Main
@@ -250,11 +297,13 @@ if __name__ == "__main__":
 	##Compare traces after new PS added for POW6 and PCB jumper moved	
 	filesIn=["032122_amp1/chip1_0.3Vinj_2min.h5py","050322_amp1/scan_0.3Vinj_2min.h5py"]
 	labels=["0.3V Injection, Amp 1 Chip 1","Nominal", "new setup"]
-	plotTraces_compare(filesIn,labels,"amp1_0.3Vinj_redoSetup", xrange=0.01, ratioBool=True)
+	#plotTraces_compare(filesIn,labels,"amp1_0.3Vinj_redoSetup", xrange=0.01, ratioBool=True)
 		
 		
-		
-		
+	##Compare high and low peaks from spectra with two main features	
+	filesIn=["052522_amp1/35mV_digitalPaired_chip1_background_15min.h5py"]	
+	div=0.08
+	plotTraces_compareFeatures(filesIn,"chip1_35mV_noise_peakShapeCompare",div, normaliz=True)	
 		
 		
 		
