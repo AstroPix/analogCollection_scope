@@ -65,6 +65,43 @@ def histDisplay(f_in,ds='run1_peaks', xBinWidth=0.002, xlabel="", ylog=False):
 		saveFile=saveDir+saveName+"_"+ds+"_hist.pdf"
 		print(f"Saving {saveFile}")
 		plot.savefig(saveFile)
+		
+#display histogram to play with
+def histDisplay_overlay(f_in,labels, saveName, ds='run1_peaks', xBinWidth=0.002, ylog=False):
+	xMax=0
+	xMin=0
+	xlabel="peak height [V]"
+	
+	for i,fil in enumerate(f_in):
+		f=h5py.File(homeDir+fil, 'r')
+
+		if traceInteg:
+			ds='run1_integral'
+			xlabel="integral [V]"
+			
+		data=f[ds]
+		
+		if i==0:
+			#set based upon first input file and use same values for all inputs
+			xMax=np.max(data)
+			xMin=np.min(data)
+			binEdges=np.arange(xMin,xMax+xBinWidth,xBinWidth)#use peakMax+xBinWidth to overshoot range and include all data
+
+		#Create histogram of data
+		plt.hist(data,bins=binEdges,label=labels[i+1], alpha=0.5)
+		
+	if ylog:
+		plt.yscale('log')	
+	plt.xlabel(xlabel)
+	plt.ylabel("Counts")
+	plt.legend(loc="best")
+	plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+	plt.show() #creates new figure for display
+	savePlt=saveFromInput()
+	if savePlt: #save plt stored with plt.gcf()
+		saveFile=saveDir+saveName+"_"+ds+"_hist.pdf"
+		print(f"Saving {saveFile}")
+		plot.savefig(saveFile)
 	
 #investigate histograms of DC baseline for AC runs
 def histDisplay_baseline(f_in,ds='run1_peaks', xBinWidth=0.002):
@@ -284,8 +321,69 @@ def fitGaussian(f_in,binsize=0.001,muGuess=-1):
 		print(f"Saving {saveFile}")
 		plot.savefig(saveFile)
 
+def getRate(f_in, ds="run1", div=0.08):
+	f=h5py.File(homeDir+f_in, 'r')
 
+	hits=f[ds+"_peaks"]
+	time=f[ds+"_trigTime"]
+	
+	noHits=len(hits)
+	totTime=time[-1]-time[0]
+	rate=noHits/totTime
+	print(f"{noHits} triggers over {totTime:.1f} s => {rate:.3f} Hz")
+	
+	highHits=[x for x in hits if x>div]
+	print(f"{len(highHits)} triggers over {div*100.}mV in {totTime:.1f} s => {len(highHits)/totTime:.3f} Hz")
 
+	
+def heightVsTime(f_in, ds="run1"):
+	f=h5py.File(homeDir+f_in, 'r')
+	saveName=f_in.split('/')[-1][:-5] #name output file with h5py name minus extension and directory
+
+	
+	hits=f[ds+"_peaks"]
+	time=f[ds+"_trigTime"]
+	t0=time[0]
+	time=[x-t0 for x in time]
+	duration=np.max(time)/60.
+	mins=[60*i for i in range(int(duration+1))]
+	
+	#bin in minutes
+	shortCounts=np.zeros(len(mins))
+	tallCounts=np.ones(len(mins))
+	
+	for hit in zip(time,hits):
+		minBin= int(hit[0]/60) #typecast rounds it to the appropriate bin
+		if hit[1] < 0.08:
+			shortCounts[minBin]+=1
+		else:
+			tallCounts[minBin]+=1
+	
+	#so bins are centered in ratio plot
+	minBins=[x+30 for x in mins]
+	
+	fig, axs = plt.subplots(2, sharex=True, figsize=(9,4), gridspec_kw={'height_ratios': [2,1]})
+	
+	axs[0].bar(time,hits)
+	plt.xticks(mins)
+	for min in mins:
+		axs[0].axvline(x=min, color='red', alpha=0.3)
+	plt.setp(axs[0], ylabel='Pulse height [V]')
+	plt.xlabel('Time from start of run [s]')
+	axs[1].bar(minBins,shortCounts/tallCounts,60)
+	axs[1].set_yticks(np.arange(5))
+	axs[1].grid(True)
+	plt.setp(axs[1], ylabel='Short/tall \ncount ratio')
+	
+	plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+	plt.show() #creates new figure for display
+	savePlt=saveFromInput()
+	if savePlt: #save plt stored with plt.gcf()
+		saveFile=saveDir+saveName+"_hitTiming.pdf"
+		print(f"Saving {saveFile}")
+		plot.savefig(saveFile)
+	
+	
 #################################################################
 # main
 #################################################################
@@ -293,14 +391,18 @@ def fitGaussian(f_in,binsize=0.001,muGuess=-1):
 if __name__ == "__main__":
 		
 	##For combining files
-	filesIn=["102921_amp1/americium241_90min.h5py", "110421_amp1/Americium_120min.h5py","110421_amp1/test_Americium_30min.h5py","110421_amp1/_Americium_240min.h5py"]
-	outFile="110421_amp1/Americium_480min_combined.h5py"
+	filesIn=["052522_amp1/20mV_digitalPaired_chip1_background_15min.h5py","052522_amp1/25mV_digitalPaired_chip1_background_15min.h5py","052522_amp1/30mV_digitalPaired_chip1_background_15min.h5py","052522_amp1/35mV_digitalPaired_chip1_background_15min.h5py","052522_amp1/40mV_digitalPaired_chip1_background_15min.h5py","052622_amp1/40mV_digitalPaired_chip1_background_15min.h5py","052622_amp1/45mV_digitalPaired_chip1_background_15min.h5py","052622_amp1/50mV_digitalPaired_chip1_background_15min.h5py","052622_amp1/80mV_digitalPaired_chip1_background_15min.h5py"]
+	outFile= "v2_chip1_noise_trigScan_compareHists"
 
 	###METHODS TO RUN###
 	
 	##Display a histogram
-	#histDisplay("121521_amp1/150mV_chip004_cobalt57_combined_2040min.h5py")
+	#histDisplay("050422_amp1/100mV_cobalt57_180min.h5py", ds='run1_integral',xBinWidth=10)
 	#Optional argument of: dataset [ds], bin size [xBinWidth],  x axis label [xlabel], y log scale (bool) [ylog]
+
+	##Pull the same data from multiple files and plot all histograms on one plot with low opacity
+	labels=["chip1 noise runs - analog trigger scan","20mV","25mV","30mV","35mV","40mV","40mV","45mV","50mV","80mV"]
+	histDisplay_overlay(filesIn, labels, outFile, ylog=True)
 
 	##Analyze DC baseline (for data taken with DC only - depreciated)
 	#histDisplay_baseline("120921_amp1/90mV_chip004_AC_Cadmium_1200min.h5py",ds='run1_baseline', xBinWidth=0.00005)
@@ -315,7 +417,11 @@ if __name__ == "__main__":
 	#fitGaussian("030822_amp1/chip2_200mV_cadmium109_330min_combined.h5py", binsize=0.003, muGuess=0.46)
 	#Optional argument of: bin size [binsize], mu guess initial parameter [muGuess]
 
-	
+	##Get rate of data collected
+	#Optional argument: div = divider where traces with >div are counted again
+	#getRate("052622_amp1/80mV_digitalPaired_chip1_background_15min.h5py")
+
+	"""
 	fileName_eb2=["032922_amp1/chip2_baseline_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_0.5in_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_1.7in_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_3.2in_1.0Vinj_2min.h5py"]
 	fileName_eb3=["032922_amp1/chip3_baseline_1.0Vinj_2min.h5py","032922_amp1/chip3_EBt_0.5in_1.0Vinj_2min.h5py","032922_amp1/chip3_EBt_1.7in_1.0Vinj_2min.h5py","032922_amp1/chip3_EBt_3.2in_1.0Vinj_2min.h5py"]
 	histDisplay("032922_amp1/chip3_baseline_1.0Vinj_2min.h5py",xBinWidth=0.002)
@@ -325,7 +431,9 @@ if __name__ == "__main__":
 		fitGaussian(entry)		
 	for entry in fileName_eb3:
 		fitGaussian(entry)				
-
+	"""
 		
+	##Display bar graph of pulse height vs recorded time
+	#heightVsTime("052522_amp1/35mV_digitalPaired_chip1_background_15min.h5py")
 
 
