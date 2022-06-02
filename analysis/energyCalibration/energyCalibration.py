@@ -394,7 +394,7 @@ if pix==1:
 		trueEn=[22.16,88.03,122.06,14.41,30.1,59.54]
 		binSizeArr=[0.5,1.2,2.5,0.5,1.5,1.0]#default 0
 		if traceInteg:
-			fitLowArr=[0,0,100,0,0,0]
+			fitLowArr=[18,60,100,0,0,50]
 			fitHighArr=[np.inf,np.inf,np.inf,np.inf,np.inf,np.inf]
 		else:
 			fitLowArr=[0,70,100,0,0,55] #default 0
