@@ -67,7 +67,7 @@ def histDisplay(f_in,ds='run1_peaks', xBinWidth=0.002, xlabel="", ylog=False):
 		plot.savefig(saveFile)
 		
 #display histogram to play with
-def histDisplay_overlay(f_in,labels, saveName, ds='run1_peaks', xBinWidth=0.002, ylog=False):
+def histDisplay_overlay(f_in,labels, saveName, ds='run1_peaks', xBinWidth=0.002, ylog=False, norm=False):
 	xMax=0
 	xMin=0
 	xlabel="peak height [V]"
@@ -88,7 +88,11 @@ def histDisplay_overlay(f_in,labels, saveName, ds='run1_peaks', xBinWidth=0.002,
 			binEdges=np.arange(xMin,xMax+xBinWidth,xBinWidth)#use peakMax+xBinWidth to overshoot range and include all data
 
 		#Create histogram of data
-		plt.hist(data,bins=binEdges,label=labels[i+1], alpha=0.5)
+		if norm:
+			plt.hist(data,bins=binEdges,label=labels[i+1], alpha=0.5, density=True)		
+		else:		
+			plt.hist(data,bins=binEdges,label=labels[i+1], alpha=0.5)
+
 		
 	if ylog:
 		plt.yscale('log')	
@@ -333,7 +337,7 @@ def getRate(f_in, ds="run1", div=0.08):
 	print(f"{noHits} triggers over {totTime:.1f} s => {rate:.3f} Hz")
 	
 	highHits=[x for x in hits if x>div]
-	print(f"{len(highHits)} triggers over {div*100.}mV in {totTime:.1f} s => {len(highHits)/totTime:.3f} Hz")
+	#print(f"{len(highHits)} triggers over {div*100.}mV in {totTime:.1f} s => {len(highHits)/totTime:.3f} Hz")
 
 	
 def heightVsTime(f_in, ds="run1"):
@@ -383,6 +387,28 @@ def heightVsTime(f_in, ds="run1"):
 		print(f"Saving {saveFile}")
 		plot.savefig(saveFile)
 	
+def integrateTrace(f_in,ds='run1'):	
+
+	saveName=f_in.split('/')[-1][:-5] #name output file with h5py name minus extension and directory
+	f=h5py.File(homeDir+f_in,'r')
+	traces=f[ds]
+	#baseline
+	#integral=[sum(t[:2000])+sum(t[7000:]) for t in traces]
+	#full trace
+	integral=[sum(t) for t in traces]
+
+	plt.hist(integral)
+	plt.xlabel("Integrated pulse")
+	plt.ylabel("Counts")
+
+	plot=plt.gcf() #get current figure - saves fig in case savePlt==True
+	plt.show() #creates new figure for display
+	savePlt=saveFromInput()
+	if savePlt: #save plt stored with plt.gcf()
+		saveFile=saveDir+saveName+"_pulseIntegral_baseline.pdf"
+		print(f"Saving {saveFile}")
+		plot.savefig(saveFile)
+	
 	
 #################################################################
 # main
@@ -397,12 +423,16 @@ if __name__ == "__main__":
 	###METHODS TO RUN###
 	
 	##Display a histogram
-	#histDisplay("050422_amp1/100mV_cobalt57_180min.h5py", ds='run1_integral',xBinWidth=10)
+	#histDisplay("070822_amp1/chip602_100mV_digiPix50_cobalt57_30min.h5py")
 	#Optional argument of: dataset [ds], bin size [xBinWidth],  x axis label [xlabel], y log scale (bool) [ylog]
 
 	##Pull the same data from multiple files and plot all histograms on one plot with low opacity
-	labels=["chip1 noise runs - analog trigger scan","20mV","25mV","30mV","35mV","40mV","40mV","45mV","50mV","80mV"]
-	histDisplay_overlay(filesIn, labels, outFile, ylog=True)
+	#labels=["chip1 noise runs - analog trigger scan","20mV","25mV","30mV","35mV","40mV","40mV","45mV","50mV","80mV"]
+	filesIn=["070822_amp1/chip602_100mV_digiPix50_cobalt57_30min.h5py","070622_amp1/chip602_100mV_digitalPaired_cobalt57_960min.h5py"]
+	labels=['Analog signal - single active pixel','Pixel (5,0) x32','Pixel (0,0)']
+	outFile="chip602_singlePixCo_crosstalk"
+	histDisplay_overlay(filesIn, labels, outFile, norm=True)
+	#Optional arguments: yscale (bool), norm (bool) - to normalize all histograms on shared axes
 
 	##Analyze DC baseline (for data taken with DC only - depreciated)
 	#histDisplay_baseline("120921_amp1/90mV_chip004_AC_Cadmium_1200min.h5py",ds='run1_baseline', xBinWidth=0.00005)
@@ -414,12 +444,14 @@ if __name__ == "__main__":
 	#copyScalingDS(f_scaling,f)
 	
 	##Fit distribution to a Gaussian and plot
-	#fitGaussian("030822_amp1/chip2_200mV_cadmium109_330min_combined.h5py", binsize=0.003, muGuess=0.46)
+	#fitGaussian("060922_amp1/chip1_DisHiDr0_digitalPaired_1.0Vinj_2min.h5py", binsize=0.002)
 	#Optional argument of: bin size [binsize], mu guess initial parameter [muGuess]
 
 	##Get rate of data collected
 	#Optional argument: div = divider where traces with >div are counted again
-	#getRate("052622_amp1/80mV_digitalPaired_chip1_background_15min.h5py")
+	inputs=["070622_amp1/chip602_100mV_digitalPaired_cobalt57_960min.h5py","070822_amp1/chip602_100mV_digiPix05_cobalt57_30min.h5py","070822_amp1/chip602_100mV_digiPix50_cobalt57_30min.h5py","070822_amp1/chip602_100mV_digiPix727_cobalt57_30min.h5py","070822_amp1/chip602_100mV_digiPix1917_cobalt57_60min.h5py","070822_amp1/chip602_100mV_digiPix268_cobalt57_30min.h5py","070822_amp1/chip602_100mV_digiPix3434_cobalt57_60min.h5py"]
+	#for f in inputs:
+	#	getRate(f)
 
 	"""
 	fileName_eb2=["032922_amp1/chip2_baseline_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_0.5in_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_1.7in_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_3.2in_1.0Vinj_2min.h5py"]
@@ -436,4 +468,5 @@ if __name__ == "__main__":
 	##Display bar graph of pulse height vs recorded time
 	#heightVsTime("052522_amp1/35mV_digitalPaired_chip1_background_15min.h5py")
 
-
+	##Calculate integral under each trace and plot histogram of integral values
+	#integrateTrace("052322_amp1/fullInjTrace_chip3_1.0Vinj_2min.h5py")
