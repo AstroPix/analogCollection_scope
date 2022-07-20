@@ -107,7 +107,7 @@ def getFiles(amp):
 		with open(input1, 'r') as files1:
 			fileList=files1.readlines()
 		if chip==1:
-			energyList=[22.16, 88.03,122.06,14.41,30.1,59.54]
+			energyList=[22.16, 88.03,122.06,14.41,30.97,59.54]
 			nameList=["Cadmium109", "Cadmium109", "Cobalt57", "Cobalt57","Barium133", "Americium241"]
 			#fine-tune the range so that individual peaks are picked out
 			if not traceInteg:
@@ -120,7 +120,7 @@ def getFiles(amp):
 				#binsize=np.zeros(len(energyList))
 				binsize=np.ones(len(energyList))*0.25
 		if chip==2 :
-			energyList=[22.16, 88.03,122.06,14.41,30.1]
+			energyList=[22.16, 88.03,122.06,14.41,30.97]
 			nameList=["Cadmium109", "Cadmium109", "Cobalt57", "Cobalt57","Barium133"]
 			#fine-tune the range so that individual peaks are picked out
 			if not traceInteg:
@@ -391,13 +391,13 @@ if pix==1:
 	#chip001 v2#not fitting edge
 		files=["050422_amp1/35mV_cadmium109_5min.h5py","050422_amp1/200mV_cadmium109_960min.h5py","050422_amp1/100mV_cobalt57_180min.h5py","050422_amp1/35mV_cobalt57_60min.h5py","050522_amp1/test_100mV_barium133_330min.h5py","051822_amp1/125mV_digitalPaired_americium241_1020min.h5py"]
 		name=["Cadmium109-calib","Cadmium109-calib","Cobalt57-calib","Cobalt57-calib","Barium133-calib", "Americium241-calib"]
-		trueEn=[22.16,88.03,122.06,14.41,30.1,59.54]
+		trueEn=[22.16,88.03,122.06,14.41,30.97,59.54]
 		binSizeArr=[0.5,1.2,2.5,0.5,1.5,1.0]#default 0
 		if traceInteg:
 			fitLowArr=[18,60,100,0,0,50]
 			fitHighArr=[np.inf,np.inf,np.inf,np.inf,np.inf,np.inf]
 		else:
-			fitLowArr=[0,70,100,0,0,55] #default 0
+			fitLowArr=[10,70,100,0,0,55] #default 0
 			fitHighArr=[40,np.inf,140,np.inf,np.inf,np.inf] #default np.inf
 			
 		for i,f in enumerate(files):
@@ -409,7 +409,7 @@ if pix==1:
 	#chip002 v2#not fitting edge
 		files=["030322_amp1/TEST_chip2_cadmium109_10min.h5py","030822_amp1/chip2_200mV_cadmium109_330min_combined.h5py","030422_amp1/chip2_150mV_cobalt57_150min.h5py","030422_amp1/chip2_75mV_cobalt57_120min.h5py","030722_amp1/chip2_100mV_barium133_960min.h5py"]
 		name=["Cadmium109-calib","Cadmium109-calib","Cobalt57-calib","Cobalt57-calib","Barium133-calib"]
-		trueEn=[22.16,88.03,122.06,14.41,30.1]
+		trueEn=[22.16,88.03,122.06,14.41,30.97]
 		binSizeArr=[0.5,1.2,2.5,0.5,1]#default 0
 		if traceInteg:
 			fitLowArr=[0,0,100,0,0]
