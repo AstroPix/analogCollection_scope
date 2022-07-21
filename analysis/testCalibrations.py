@@ -258,6 +258,8 @@ def muEnResScan(dir, fit, pix, calibPixel, ratioBool=False):
 		axs[1].hlines(1,1,max(en)*1.1,colors='black')
 		plt.setp(axs[1],ylabel=f"Ratio \n(calibrated/true)")
 		saveto=dir+fit+"_amp"+str(pix)+"_muEnResScan_"+label+"_calib"+str(calibPixel)+"_ratio.pdf"
+		print(ratio)
+		print(f"sig/mu = {np.std(ratio):.3f}/{np.mean(ratio):.3f} = {np.std(ratio)/np.mean(ratio):.3f}")
 	else:
 		plt.plot(x,linear_model(x),'k--')
 		cbar = plt.colorbar(pl)
