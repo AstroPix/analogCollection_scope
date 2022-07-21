@@ -8,7 +8,7 @@ from scipy.optimize import curve_fit
 #Global variables
 #################################
 
-vers=2
+vers=1
 traceInteg=False
 homeDir = f"/Users/asteinhe/AstroPixData/astropixOut_tmp/v{vers}/"
 saveDir= f"/Users/asteinhe/AstroPixData/astropixOut_tmp/h5pyHelpers/v{vers}/"
@@ -423,7 +423,7 @@ if __name__ == "__main__":
 	###METHODS TO RUN###
 	
 	##Display a histogram
-	#histDisplay("070822_amp1/chip602_100mV_digiPix50_cobalt57_30min.h5py")
+	histDisplay("111021_amp1/daytime_background_300min.h5py")
 	#Optional argument of: dataset [ds], bin size [xBinWidth],  x axis label [xlabel], y log scale (bool) [ylog]
 
 	##Pull the same data from multiple files and plot all histograms on one plot with low opacity
@@ -431,7 +431,7 @@ if __name__ == "__main__":
 	filesIn=["070822_amp1/chip602_100mV_digiPix50_cobalt57_30min.h5py","070622_amp1/chip602_100mV_digitalPaired_cobalt57_960min.h5py"]
 	labels=['Analog signal - single active pixel','Pixel (5,0) x32','Pixel (0,0)']
 	outFile="chip602_singlePixCo_crosstalk"
-	histDisplay_overlay(filesIn, labels, outFile, norm=True)
+	#histDisplay_overlay(filesIn, labels, outFile, norm=True)
 	#Optional arguments: yscale (bool), norm (bool) - to normalize all histograms on shared axes
 
 	##Analyze DC baseline (for data taken with DC only - depreciated)
@@ -449,9 +449,9 @@ if __name__ == "__main__":
 
 	##Get rate of data collected
 	#Optional argument: div = divider where traces with >div are counted again
-	inputs=["070622_amp1/chip602_100mV_digitalPaired_cobalt57_960min.h5py","070822_amp1/chip602_100mV_digiPix05_cobalt57_30min.h5py","070822_amp1/chip602_100mV_digiPix50_cobalt57_30min.h5py","070822_amp1/chip602_100mV_digiPix727_cobalt57_30min.h5py","070822_amp1/chip602_100mV_digiPix1917_cobalt57_60min.h5py","070822_amp1/chip602_100mV_digiPix268_cobalt57_30min.h5py","070822_amp1/chip602_100mV_digiPix3434_cobalt57_60min.h5py"]
-	#for f in inputs:
-	#	getRate(f)
+	inputs=["111021_amp1/daytime_background_300min.h5py"]
+	for f in inputs:
+		getRate(f)
 
 	"""
 	fileName_eb2=["032922_amp1/chip2_baseline_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_0.5in_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_1.7in_1.0Vinj_2min.h5py","032922_amp1/chip2_EBt_3.2in_1.0Vinj_2min.h5py"]

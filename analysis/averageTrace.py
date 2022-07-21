@@ -282,7 +282,9 @@ if __name__ == "__main__":
 	for i in inj:
 		fileName_versions=[f"102221_amp1/1.{i}Vinj.h5py",f"030122_amp1/scan_1.{i}Vinj_2min.h5py",f"032122_amp1/chip1_1.{i}Vinj_2min.h5py"]	
 		vers=[f"1.{i}V injection, Amp1","v1","v2 orig", "v2 new DACs"]
-		#plotTraces_compare(fileName_versions, vers, f"amp1_1.{i}Vinj_compareVersions", xrange=0.02, versionBool=True, versionArray=[1,2,2])
+		#fileName_versions=[f"102221_amp1/1.{i}Vinj.h5py",f"032122_amp1/chip1_1.{i}Vinj_2min.h5py"]	
+		#vers=[f"1.{i}V injection, Amp1","v1","v2"]
+		plotTraces_compare(fileName_versions, vers, f"amp1_1.{i}Vinj_compareVersions", xrange=0.02, versionBool=True, versionArray=[1,2,2])
 
 	##Compare traces as bench setup is updated
 	filesIn=["032122_amp1/chip1_1.0Vinj_2min.h5py","032522_amp1/newPS_chip2_1.0Vinj_2min.h5py","032522_amp1/newCable_newPS_chip2_1.0Vinj_2min.h5py","032822_amp1/newCable2_newPS_chip2_1.0Vinj_2min.h5py"]
@@ -299,12 +301,16 @@ if __name__ == "__main__":
 	labels=["0.3V Injection, Amp 1 Chip 1","Nominal", "new setup"]
 	#plotTraces_compare(filesIn,labels,"amp1_0.3Vinj_redoSetup", xrange=0.01, ratioBool=True)
 		
-		
 	##Compare high and low peaks from spectra with two main features	
 	filesIn=["052522_amp1/35mV_digitalPaired_chip1_background_15min.h5py"]	
 	div=0.08
-	plotTraces_compareFeatures(filesIn,"chip1_35mV_noise_peakShapeCompare",div, normaliz=True)	
+	#plotTraces_compareFeatures(filesIn,"chip1_35mV_noise_peakShapeCompare",div, normaliz=True)	
 		
+	##Compare pulse shapes for irradiated chips - 1V signals
+	filesIn=["052322_amp1/fullInjTrace_chip1_1.0Vinj_2min.h5py","052322_amp1/fullInjTrace_chip2_1.0Vinj_2min.h5py","052322_amp1/fullInjTrace_chip3_1.0Vinj_2min.h5py"]
+	labels=["1.0V Injection","Chip1 (not irradiated)", "Chip2 (irradiated)", "Chip3 (irradiated)"]
+	#plotTraces_compare(filesIn,labels,"1.0Vinj_irradiatedChips", xrange=0.01, ratioBool=True)
+	
 		
 		
 		
